@@ -1,0 +1,49 @@
+name: tmate SSH Session
+
+on:
+  workflow_dispatch:  # Permite ejecución manual
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  tmate-ssh:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      with:
+        # Configuraciones opcionales
+        # timeout: 60  # Tiempo máximo en minutos (por defecto 360)
+        
+    - name: Configure tmate
+      run: |
+        echo "========================================"
+        echo "🚀 tmate SSH Session Configurada"
+        echo "========================================"
+        echo ""
+        echo "📡 Información de conexión:"
+        echo "----------------------------------------"
+        echo "🔑 SSH Command:"
+        echo "  $ tmate show-messages"
+        echo ""
+        echo "🌐 WebSocket URL:"
+        echo "  $ tmate show-messages"
+        echo ""
+        echo "========================================"
+        echo "💡 Una vez conectado, puedes usar como VPS normal"
+        echo "========================================"
+        
+    - name: Keep alive
+      run: |
+        # Mantener la sesión activa
+        echo "🔄 Manteniendo sesión activa..."
+        while true; do
+          echo "⏰ $(date) - Sesión activa. Presiona Ctrl+C para terminar."
+          sleep 60
+        done
