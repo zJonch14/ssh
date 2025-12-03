@@ -1,46 +1,83 @@
-name: tmate SSH Session
+name: UDPHexBott Testt
 
 on:
-  workflow_dispatch:  # Permite ejecución manual
+  workflow_dispatch:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    branches:
+      - main
 
 jobs:
-  tmate-ssh:
+  build-and-run:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-      
-    - name: Configure tmate
-      run: |
-        echo "========================================"
-        echo "🚀 tmate SSH Session Configurada"
-        echo "========================================"
-        echo ""
-        echo "📡 Información de conexión:"
-        echo "----------------------------------------"
-        echo "🔑 SSH Command:"
-        echo "  \$ tmate show-messages"
-        echo ""
-        echo "🌐 WebSocket URL:"
-        echo "  \$ tmate show-messages"
-        echo ""
-        echo "========================================"
-        echo "💡 Una vez conectado, puedes usar como VPS normal"
-        echo "========================================"
-        
-    - name: Keep alive
-      run: |
-        # Mantener la sesión activa
-        echo "🔄 Manteniendo sesión activa..."
-        while true; do
-          echo "⏰ $(date) - Sesión activa. Presiona Ctrl+C para terminar."
-          sleep 60
-        done
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -U discord.py || true
+
+      - name: Ensure build tools are available
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      - name: Build UDP binaries
+        run: |
+          # Compilar udp (antiguo udphexv1)
+          if [ -f udp.c ]; then
+            gcc -O3 -pthread -o udp udp.c || true
+            echo "✓ Compilado: udp (de udp.c)"
+            chmod +x udp
+          else
+            echo "✗ udp.c no encontrado, omitiendo compilación de udp"
+          fi
+
+          # Compilar udphex (antiguo udphexv2)
+          if [ -f udphex.c ]; then
+            gcc -O3 udphex.c -o udphex || true
+            echo "✓ Compilado: udphex (de udphex.c)"
+            chmod +x udphex
+          else
+            echo "✗ udphex.c no encontrado, omitiendo compilación de udphex"
+          fi
+
+          # Compilar nuevo método udppps
+          if [ -f udppps.c ]; then
+            gcc -O3 udppps.c -o udppps || true
+            echo "✓ Compilado: udppps (nuevo método)"
+            chmod +x udppps
+          else
+            echo "✗ udppps.c no encontrado, omitiendo compilación de udppps"
+          fi
+
+          # Listar archivos compilados
+          echo ""
+          echo "=== Archivos compilados disponibles ==="
+          for bin in udp udphex udppps; do
+            if [ -f "$bin" ]; then
+              echo "✓ $bin (ejecutable)"
+            else
+              echo "✗ $bin (no compilado)"
+            fi
+          done
+          echo "====================================="
+
+      - name: Run bot with all methods
+        env:
+          # Exponemos el secret como la variable de entorno KEYS que lee bot.py
+          KEYS: ${{ secrets.KEYS }}
+        run: |
+          echo "====================================="
+          echo "Iniciando UDPHexBot con todos los métodos"
+          echo "Comandos disponibles:"
+          echo "  !attack udp <ip> <puerto> <tiempo>"
+          echo "  !attack udphex <ip> <puerto> <tiempo>"
+          echo "  !attack udppps <ip> <puerto> <tiempo>"
+          echo "  !methods - Muestra información de métodos"
+          echo "====================================="
+          python bot.py
