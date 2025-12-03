@@ -1,4 +1,4 @@
-name: UDPHexBott Testt
+name: UDPHexBott Testtt
 
 on:
   workflow_dispatch:
