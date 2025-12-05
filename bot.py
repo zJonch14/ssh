@@ -83,7 +83,6 @@ async def attack(ctx, metodo: str, ip: str, port: int, tiempo: int):
 async def show_methods(ctx):
     methods_info = """
 **Métodos disponibles:**
-
 • **udp** - Método UDPFlood, consumo mayor de la cpu
   `!attack udp <ip> <puerto> <tiempo>`
 • **udphex** - Método UDPHEX
