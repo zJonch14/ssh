@@ -91,5 +91,4 @@ async def show_methods(ctx):
     """
     await ctx.send(methods_info)
 
-# Inicia el bot
 bot.run(TOKEN)
