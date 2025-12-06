@@ -32,7 +32,6 @@ async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
-        # Espera a que termine y captura salida (no se enviará al canal)
         stdout, stderr = await proceso.communicate()
 
         # Envía mensaje al canal indicando que el ataque finalizó (sin código de salida ni salida del proceso)
