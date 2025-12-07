@@ -16,7 +16,7 @@ bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
 @bot.event
 async def on_ready():
     print(f'Bot conectado como {bot.user.name}')
-    await bot.change_presence(activity=discord.Game(name="Atacando Galaxy"))
+    await bot.change_presence(activity=discord.Game(name="Atacando GalaxyBugs"))
 
 async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
     try:
