@@ -46,7 +46,6 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
         await ctx.send("!attack {method} {ip} {port} {time}")
         return
 
-    # Verificar que no haya nulls
     if ip == "null" or port == "null" or tiempo == "null":
         await ctx.send("Faltan parametros ip, puerto o tiempo")
         return
