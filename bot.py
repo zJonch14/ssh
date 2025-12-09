@@ -5,7 +5,7 @@ import asyncio
 
 TOKEN = os.getenv('KEYS')
 if not TOKEN:
-    print("ERROR: No se ha encontrado el token de Discord")
+    print("ERROR: No se ha encontrado el token de Discord!")
     exit(1)
 
 BOT_PREFIX = '!'
