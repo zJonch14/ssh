@@ -8,7 +8,7 @@ if not TOKEN:
     print("ERROR: No se ha encontrado el token de Discord")
     exit(1)
 
-BOT_PREFIX = '$'
+BOT_PREFIX = '!'
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
