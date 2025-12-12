@@ -43,7 +43,7 @@ async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
 @bot.command(name='attack', help='!attack {method} {ip} {port} {time}')
 async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiempo: str = None):
     if metodo is None or ip is None or port is None or tiempo is None:
-        await ctx.send("!attack {method} {ip} {port} {time}")
+        await ctx.send("!attack {method} {ip} {port} {time} 2")
         return
 
     # Verificar que no haya nulls
