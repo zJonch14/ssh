@@ -43,7 +43,7 @@ async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
 @bot.command(name='attack', help='!attack {method} {ip} {port} {time}')
 async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiempo: str = None, *, payload: str = None):
     if metodo is None or ip is None or port is None or tiempo is None:
-        await ctx.send("Uso: !attack {method} {ip} {port} {time}")
+        await ctx.send("!attack {method} {ip} {port} {time}")
         return
 
     if ip == "null" or port == "null" or tiempo == "null":
