@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     }
     
     // Leer payload desde archivo
-    FILE *f = fopen(argv[4], "r");
+    FILE *f = fopen(argv[4], "rb");  // Cambiado a "rb" para leer binario
     if (!f) {
         printf("Error leyendo payload\n");
         return 1;
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     
     char payload[MAX_PAYLOAD];
     int size = fread(payload, 1, MAX_PAYLOAD, f);
-    fclose(payload);
+    fclose(f);  // CORREGIDO: cerrar FILE* no char*
     
     if (size <= 0) {
         printf("Payload vacio\n");
