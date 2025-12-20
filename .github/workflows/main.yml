@@ -1,4 +1,4 @@
-name: UDPsBotRaknet
+name: UDPsBotRaknett
 
 on:
   workflow_dispatch:
