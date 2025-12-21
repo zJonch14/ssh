@@ -3,10 +3,38 @@ import discord
 from discord.ext import commands
 import asyncio
 
+# ========== LEER DIRECTAMENTE DE SECRET KEYS ==========
 TOKEN = os.getenv('KEYS')
-if not TOKEN:
-    print("ERROR: No se ha encontrado el token de Discord")
+
+print("\n" + "="*60)
+print("🔍 CONFIGURANDO BOT")
+print("="*60)
+
+# Verificar que el token se obtuvo correctamente
+if TOKEN:
+    token_length = len(TOKEN)
+    print(f"✅ Token obtenido de variable de entorno 'KEYS'")
+    print(f"📏 Longitud: {token_length} caracteres")
+    print(f"🔐 Vista previa: {TOKEN[:15]}...")
+    
+    # Validar formato básico del token
+    if token_length < 50:
+        print(f"⚠️  Advertencia: Token muy corto ({token_length} chars)")
+        print("   Un token válido de Discord tiene ~59 caracteres")
+else:
+    print("❌ ERROR CRÍTICO: No se encontró el token")
+    print("")
+    print("SOLUCIÓN:")
+    print("1. En GitHub Actions: Configura un secret llamado 'KEYS'")
+    print("2. En local: Exporta variable de entorno: export KEYS='tu_token'")
+    print("")
+    print("Pasos en GitHub Actions:")
+    print("   Settings → Secrets and variables → Actions")
+    print("   New repository secret → Name: KEYS → Value: [tu_token]")
+    print("")
     exit(1)
+
+print("="*60 + "\n")
 
 BOT_PREFIX = '!'
 intents = discord.Intents.default()
@@ -15,7 +43,8 @@ bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f'Bot conectado como {bot.user.name}')
+    print(f'✅ Bot conectado como {bot.user.name} (ID: {bot.user.id})')
+    print(f'🎮 Estado: Atacando con UDP')
     await bot.change_presence(activity=discord.Game(name="Atacando con UDP"))
 
 async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
@@ -187,4 +216,17 @@ Methods L7:
 """
     await ctx.send(methods_info)
 
-bot.run(TOKEN)
+# ========== VERIFICACIÓN FINAL ANTES DE INICIAR ==========
+print("🚀 INICIANDO BOT CON TODOS LOS MÉTODOS")
+print("🔧 Configurado para leer directamente de secret 'KEYS'")
+print(f"📏 Token verificado: {len(TOKEN)} caracteres")
+
+try:
+    bot.run(TOKEN)
+except discord.LoginFailure:
+    print("\n❌ ERROR DE AUTENTICACIÓN")
+    print("El token es inválido o ha expirado")
+    print("Verifica que el secret 'KEYS' en GitHub tenga el token correcto")
+    print("Obten un nuevo token en: https://discord.com/developers/applications")
+except Exception as e:
+    print(f"\n❌ ERROR INESPERADO: {e}")
