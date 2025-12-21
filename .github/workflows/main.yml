@@ -1,4 +1,4 @@
-name: BOT L4 Y L7
+name: BOTDDOSL4YL7
 
 on:
   workflow_dispatch:
@@ -14,75 +14,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🔐 CREAR token.txt DESDE KEYS
-        env:
-          DISCORD_TOKEN: ${{ secrets.KEYS }}
-        run: |
-          echo "=== CREANDO token.txt ==="
-          
-          # Verificar que el secret existe
-          if [ -z "$DISCORD_TOKEN" ]; then
-            echo "❌ ERROR: Secret 'KEYS' no configurado"
-            echo ""
-            echo "SOLUCIÓN RÁPIDA:"
-            echo "1. Ve a Settings → Secrets and variables → Actions"
-            echo "2. New repository secret"
-            echo "3. Name: KEYS"
-            echo "4. Value: [PEGA TU TOKEN AQUÍ]"
-            echo "5. Add secret"
-            exit 1
-          fi
-          
-          # Crear token.txt con el token
-          echo "$DISCORD_TOKEN" > token.txt
-          
-          # Verificar que se creó
-          if [ ! -f "token.txt" ]; then
-            echo "❌ ERROR: No se pudo crear token.txt"
-            exit 1
-          fi
-          
-          # Mostrar información (sin revelar token completo)
-          TOKEN_LENGTH=$(wc -c < token.txt)
-          echo "✅ token.txt creado exitosamente"
-          echo "   Ubicación: $(pwd)/token.txt"
-          echo "   Tamaño: $TOKEN_LENGTH caracteres"
-          echo "   Permisos: $(ls -la token.txt)"
-          echo "   Primeros chars: $(head -c 10 token.txt)..."
-          
-          # Asegurar permisos correctos
-          chmod 644 token.txt
-
-      - name: 📋 VERIFICAR token.txt
-        run: |
-          echo "=== VERIFICANDO token.txt ==="
-          
-          # Verificar que existe y tiene contenido
-          if [ ! -f "token.txt" ]; then
-            echo "❌ ERROR CRÍTICO: token.txt NO existe"
-            echo "El archivo debería estar en: $(pwd)/token.txt"
-            ls -la $(pwd)
-            exit 1
-          fi
-          
-          if [ ! -s "token.txt" ]; then
-            echo "❌ ERROR: token.txt está vacío"
-            exit 1
-          fi
-          
-          TOKEN_CONTENT=$(cat token.txt)
-          TOKEN_LENGTH=${#TOKEN_CONTENT}
-          
-          echo "✅ token.txt VERIFICADO"
-          echo "   Existe: ✓"
-          echo "   No vacío: ✓"
-          echo "   Longitud: $TOKEN_LENGTH caracteres"
-          
-          # Validar formato básico de token Discord
-          if [ $TOKEN_LENGTH -lt 50 ]; then
-            echo "⚠️  ADVERTENCIA: Token muy corto para Discord (debe ser ~59 chars)"
-          fi
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -93,60 +24,61 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Install dependencies
+      - name: Install Go dependencies
+        run: |
+          go mod init bot 2>/dev/null || true
+          go get github.com/sandertv/go-raknet 2>/dev/null || true
+          go get github.com/sirupsen/logrus 2>/dev/null || true
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install discord.py
+
+      - name: Install build tools
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential gcc g++ make libpcap-dev libssl-dev
-          pip install discord.py
-          
-          # Dependencias Go opcionales
-          go get github.com/sandertv/go-raknet 2>/dev/null || true
 
-      - name: Build all binaries
+      - name: Build binaries
         run: |
-          echo "=== COMPILANDO MÉTODOS ==="
+          echo "=== COMPILANDO BINARIOS ==="
           
-          # Lista de métodos a compilar
-          declare -A methods=(
-            ["udpbypass.c"]=""
-            ["tcp.c"]=""
-            ["tcp-syn.c"]="-lpcap"
-            ["tcp-ack.c"]="-lpcap"
-            ["tcp-tls.c"]="-lssl -lcrypto"
-            ["dns.c"]=""
-            ["ntp.c"]=""
-            ["httpsraw.c"]=""
-            ["tls.c"]="-lssl -lcrypto"
-            ["httpsrequest.c"]=""
-            ["udp.c"]=""
-            ["udphex.c"]=""
-            ["udppps.c"]=""
-            ["ovh.c"]="-lpcap"
-            ["udppayload.c"]=""
+          # Compilar métodos principales
+          binaries=(
+            "udp.c:udp"
+            "udphex.c:udphex"
+            "udppps.c:udppps"
+            "ovh.c:ovh:-lpcap"
+            "udppayload.c:udppayload"
+            "udpbypass.c:udpbypass"
+            "tcp.c:tcp"
+            "tcp-syn.c:tcp-syn:-lpcap"
+            "tcp-ack.c:tcp-ack:-lpcap"
+            "tcp-tls.c:tcp-tls:-lssl -lcrypto"
+            "dns.c:dns"
+            "ntp.c:ntp"
+            "httpsraw.c:httpsraw"
+            "tls.c:tls:-lssl -lcrypto"
+            "httpsrequest.c:httpsrequest"
           )
           
-          for source in "${!methods[@]}"; do
+          for entry in "${binaries[@]}"; do
+            IFS=':' read -r source binary libs <<< "$entry"
+            
             if [ -f "$source" ]; then
-              binary="${source%.c}"
-              libs="${methods[$source]}"
-              
               echo -n "🔨 $source → $binary ... "
               
-              if gcc -O3 -pthread "$source" -o "$binary" $libs 2>/dev/null; then
-                chmod +x "$binary"
-                echo "✅"
+              if [ -n "$libs" ]; then
+                gcc -O3 -pthread "$source" -o "$binary" $libs 2>/dev/null && {
+                  chmod +x "$binary"
+                  echo "✅"
+                } || echo "⚠️"
               else
-                # Intentar sin librerías si falla
-                if [ -n "$libs" ]; then
-                  if gcc -O3 -pthread "$source" -o "$binary" 2>/dev/null; then
-                    chmod +x "$binary"
-                    echo "✅ (sin libs)"
-                  else
-                    echo "❌"
-                  fi
-                else
-                  echo "❌"
-                fi
+                gcc -O3 -pthread "$source" -o "$binary" 2>/dev/null && {
+                  chmod +x "$binary"
+                  echo "✅"
+                } || echo "⚠️"
               fi
             fi
           done
@@ -155,52 +87,61 @@ jobs:
           echo "📂 Ejecutables disponibles:"
           ls -la | grep -E '^-..x.*' | awk '{print $9}' || echo "No hay ejecutables"
 
-      - name: 🚀 EJECUTAR BOT
+      - name: 🚀 EJECUTAR BOT CON KEYS
+        env:
+          KEYS: ${{ secrets.KEYS }}  # ¡IMPORTANTE! Esto pasa KEYS al bot.py
         run: |
           echo "========================================"
           echo "🤖 INICIANDO BOT UDP/TCP/AMP/L7"
           echo "========================================"
           
-          # VERIFICACIÓN EXTRA ANTES DE EJECUTAR
-          echo ""
-          echo "🔍 VERIFICACIÓN FINAL:"
-          echo "---------------------"
+          # DEBUG: Verificar que KEYS se recibió
+          echo "🔍 VERIFICANDO CONFIGURACIÓN:"
+          echo "   - Directorio: $(pwd)"
+          echo "   - Archivo bot.py: $(ls -la bot.py 2>/dev/null && echo "✅" || echo "❌")"
+          echo "   - KEYS recibido: $([ -n "$KEYS" ] && echo "✅ (${#KEYS} chars)" || echo "❌ VACÍO")"
           
-          # 1. Verificar bot.py
-          if [ ! -f "bot.py" ]; then
-            echo "❌ ERROR: bot.py no encontrado"
-            ls -la
+          if [ -z "$KEYS" ]; then
+            echo ""
+            echo "❌❌❌ ERROR: KEYS está VACÍO ❌❌❌"
+            echo ""
+            echo "SOLUCIÓN INMEDIATA:"
+            echo "1. El secret 'KEYS' NO está configurado o está vacío"
+            echo "2. Ve a: Settings → Secrets and variables → Actions"
+            echo "3. Haz clic en 'KEYS' para verificar su contenido"
+            echo "4. Si está vacío, edítalo y pega tu token"
+            echo ""
+            echo "Token de Discord debe tener ~59 caracteres como:"
+            echo "pito"
             exit 1
           fi
-          echo "✅ bot.py encontrado"
           
-          # 2. Verificar token.txt
-          if [ ! -f "token.txt" ]; then
-            echo "❌ ERROR: token.txt no encontrado"
-            echo "Buscando en: $(pwd)"
-            ls -la
-            exit 1
+          # Verificar formato del token
+          if [ ${#KEYS} -lt 50 ]; then
+            echo "⚠️  ADVERTENCIA: Token muy corto (${#KEYS} chars)"
+            echo "   Debe tener ~59 caracteres mínimo"
           fi
-          echo "✅ token.txt encontrado"
-          
-          # 3. Verificar que token.txt tenga contenido
-          if [ ! -s "token.txt" ]; then
-            echo "❌ ERROR: token.txt está vacío"
-            echo "Contenido: '$(cat token.txt)'"
-            exit 1
-          fi
-          echo "✅ token.txt no está vacío"
-          
-          # 4. Mostrar primeros caracteres del token
-          TOKEN_PREVIEW=$(head -c 15 token.txt)
-          TOKEN_LENGTH=$(wc -c < token.txt)
-          echo "✅ Token: ${TOKEN_PREVIEW}... ($TOKEN_LENGTH caracteres)"
           
           echo ""
-          echo "⚡ INICIANDO EJECUCIÓN..."
+          echo "✅ CONFIGURACIÓN CORRECTA"
+          echo "   Token recibido: ${#KEYS} caracteres"
+          echo "   Vista previa: ${KEYS:0:15}..."
+          echo ""
+          echo "🎮 MÉTODOS DISPONIBLES:"
+          
+          # Mostrar métodos según ejecutables
+          for method in udp udphex udppps ovh udppayload udpbypass tcp tcp-syn tcp-ack tcp-tls dns ntp httpsraw tls httpsrequest; do
+            [ -f "$method" ] && echo "   • $method"
+          done
+          
+          [ -f "udpflood.go" ] && echo "   • udpflood (Go)"
+          [ -f "raknet.go" ] && echo "   • raknet (Go)"
+          
+          echo ""
+          echo "🚀 INICIANDO bot.py..."
           echo "========================================"
           
-          # Ejecutar bot.py
+          # Ejecutar bot.py (KEYS ya está como variable de entorno)
           python3 bot.py
           
           echo ""
