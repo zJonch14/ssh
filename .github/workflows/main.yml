@@ -60,7 +60,7 @@ jobs:
             "httpsraw.c:httpsraw"
             "tls.c:tls:-lssl -lcrypto"
             "httpsrequest.c:httpsrequest"
-            "tcpsynmulti.c:tcpsynmulti:-lpthread"  # Add tcpsynmulti
+            "tcp-syn.c:tcp-syn:-lpthread"
           )
           
           for entry in "${binaries[@]}"; do
