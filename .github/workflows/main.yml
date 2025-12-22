@@ -1,4 +1,4 @@
-name: BOTDDOSL4YL7
+name: BOTDDOS L4 && L7
 
 on:
   workflow_dispatch:
@@ -38,7 +38,7 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential gcc g++ make libpcap-dev libssl-dev
+          sudo apt-get install -y build-essential gcc g++ make libpcap-dev libssl-dev wget
 
       - name: Build binaries
         run: |
@@ -86,6 +86,11 @@ jobs:
           echo ""
           echo "📂 Ejecutables disponibles:"
           ls -la | grep -E '^-..x.*' | awk '{print $9}' || echo "No hay ejecutables"
+
+      - name: Prepare environment for https-request
+        run: |
+          echo "=== Preparando entorno para https-request ==="
+          sudo python3 install.py
 
       - name: 🚀 EJECUTAR BOT CON KEYS
         env:
