@@ -4,7 +4,6 @@ from discord.ext import commands
 import asyncio
 import tempfile
 
-# ========== LEER DIRECTAMENTE DE SECRET KEYS ==========
 TOKEN = os.getenv('KEYS')
 
 print("\n" + "="*60)
