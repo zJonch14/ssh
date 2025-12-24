@@ -11,7 +11,6 @@ print("\n" + "="*60)
 print("🔍 CONFIGURANDO BOT")
 print("="*60)
 
-# Verificar que el token se obtuvo correctamente
 if TOKEN:
     token_length = len(TOKEN)
     print(f"✅ Token obtenido de variable de entorno 'KEYS'")
