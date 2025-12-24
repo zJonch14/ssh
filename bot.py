@@ -45,7 +45,7 @@ bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
 async def on_ready():
     print(f'✅ Bot conectado como {bot.user.name} (ID: {bot.user.id})')
     print(f'Attack MC Server 0.15, 1.1.5, 1.20')
-    await bot.change_presence(activity=discord.Game(name="Atacando con UDP"))
+    await bot.change_presence(activity=discord.Game(name="Attack Minecraft Servers 0.15, 1.1.5, 1.20"))
 
 async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
     try:
