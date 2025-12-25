@@ -16,7 +16,6 @@ if TOKEN:
     print(f"📏 Longitud: {token_length} caracteres")
     print(f"🔐 Vista previa: {TOKEN[:15]}...")
 
-    # Validar formato básico del token
     if token_length < 50:
         print(f"⚠️  Advertencia: Token muy corto ({token_length} chars)")
         print("   Un token válido de Discord tiene ~59 caracteres")
