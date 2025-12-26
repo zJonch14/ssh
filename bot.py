@@ -183,7 +183,6 @@ Methods L7:
 """
     await ctx.send(methods_info)
 
-# ========== VERIFICACIÓN FINAL ANTES DE INICIAR ==========
 print("🚀 INICIANDO BOT CON TODOS LOS MÉTODOS")
 print("🔧 Configurado para leer directamente de secret 'KEYS'")
 print(f"📏 Token verificado: {len(TOKEN)} caracteres")
