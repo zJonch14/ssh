@@ -70,7 +70,7 @@ async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
 @bot.command(name='attack', help='!attack {method} {ip} {port} {time} [payload]')
 async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiempo: str = None, *, payload: str = None):
     if metodo is None or ip is None or port is None or tiempo is None:
-        await ctx.send("'!attack {method} {ip} {port} {time}`")
+        await ctx.send("!attack {method} {ip} {port} {time}")
         return
 
     if ip == "null" or port == "null" or tiempo == "null":
@@ -166,20 +166,20 @@ async def show_methods(ctx):
     methods_info = """
 Methods L4 UDP Protocol:
 `• udp`
-• udphex
-• udppps (Method Inactive)
-• udpflood
-• udppayload
-• udpbypass
-• raknet
+`• udphex`
+`• udppps (Method Inactive)`
+`• udpflood`
+`• udppayload`
+`• udpbypass`
+`• raknet`
 
 Methods L4 TCP Protocol:
-• tcp
-• tcp-syn (Multi-threaded)
-• ovhtcp
+`• tcp`
+`• tcp-syn (Multi-threaded)`
+`• ovhtcp`
 
 Methods L7:
-• https-request (proxy)
+`• https-request (proxy)`
 """
     await ctx.send(methods_info)
 
