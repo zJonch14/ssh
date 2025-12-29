@@ -20,7 +20,7 @@ if TOKEN:
         print(f"⚠️  Advertencia: Token muy corto ({token_length} chars)")
         print("   Un token válido de Discord tiene ~59 caracteres")
 else:
-    print("❌ ERROR CRÍTICO: No se encontró el token")
+    print("❌ ERROR CRÍTICOOO: No se encontró el token")
     print("")
     print("SOLUCIÓN:")
     print("1. En GitHub Actions: Configura un secret llamado 'KEYS'")
