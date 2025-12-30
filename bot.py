@@ -190,7 +190,7 @@ print(f"📏 Token verificado: {len(TOKEN)} caracteres")
 try:
     bot.run(TOKEN)
 except discord.LoginFailure:
-    print("\n❌ ERRORR DE AUTENTICACIÓN")
+    print("\n❌ ERRORRRRR DE AUTENTICACIÓN")
     print("El token es inválido o ha expirado")
     print("Verifica que el secret 'KEYS' en GitHub tenga el token correcto")
     print("Obten un nuevo token en: https://discord.com/developers/applications")
