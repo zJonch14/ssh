@@ -62,7 +62,7 @@ MAX_ATTACK_DURATION = 80
 async def on_ready():
     print(f'✅ Bot conectado como {bot.user.name} (ID: {bot.user.id})')
     print(f'Avalon Bot Free')
-    await bot.change_presence(activity=discord.Game(name="Avalon Revolution"))
+    await bot.change_presence(activity=discord.Game(name="Avalon Bot Free"))
 
 # Función para ejecutar un ataque (ahora con control de errores y mensajes)
 async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
@@ -132,7 +132,7 @@ async def realizar_ataque(ctx, metodo: str, ip: str, port: str, tiempo: str):
 
     # 1. Validaciones iniciales
     if ip is None or port is None or tiempo is None:
-        await enviar_mensaje_con_formato(ctx, "Error", f"Faltan argumentos. Usa !{metodo} ip port time", discord.Color.red())
+        await enviar_mensaje_con_formato(ctx, "Error", f"!{metodo} ip port time", discord.Color.red())
         return
 
     try:
@@ -204,7 +204,7 @@ async def show_methods(ctx):
         color=discord.Color.blue()
     )
 
-    embed.add_field(name="L4 UDP Protocol", value="`• udp`\n`• hex`\n`• udppps`\n`• ovhudp'", inline=False)
+    embed.add_field(name="L4 UDP Protocol", value="`• udp`\n`• hex`\n`• udppps`\n`• ovhudp`", inline=False)
     embed.add_field(name="L4 TCP Protocol", value="`• ovhtcp`\n`• syn`", inline=False)
 
     embed.set_footer(text=f"Solicitado por {ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.avatar.url)
