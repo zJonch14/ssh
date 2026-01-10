@@ -57,7 +57,7 @@ ataque_en_curso = False
 proceso_en_curso = None
 
 # Duración del cooldown (en segundos)
-COOLDOWN_DURATION = 20
+COOLDOWN_DURATION = 40
 MAX_ATTACK_DURATION = 80
 
 # Evento que se activa cuando el bot está listo
