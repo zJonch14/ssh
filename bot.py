@@ -72,6 +72,12 @@ async def on_ready():
 async def check_channel(ctx):
     return ctx.channel.id == CHANNEL_ID
 
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        return  # Ignorar el error de comando no encontrado
+    raise error  # Re-lanzar otros errores
+    
 # Función para ejecutar un ataque (ahora con control de errores y mensajes)
 async def ejecutar_ataque(comando: str, ctx, ip: str, port: int, tiempo: int, metodo: str):
     global ataque_en_curso, proceso_en_curso
